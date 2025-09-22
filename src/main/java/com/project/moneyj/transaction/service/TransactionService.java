@@ -1,11 +1,8 @@
 package com.project.moneyj.transaction.service;
 
-import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
-import com.project.moneyj.codef.service.CodefCardService;
 import com.project.moneyj.transaction.domain.Transaction;
 import com.project.moneyj.transaction.repository.TransactionRepository;
 import com.project.moneyj.user.domain.User;
-import com.project.moneyj.user.repository.UserRepository;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -18,21 +15,9 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TransactionService {
     private final TransactionRepository transactionRepository;
-    private final UserRepository userRepository;
-    private final CodefCardService codefCardService;
 
     @Transactional
-    public void saveTransactions(Long userId, CardApprovalRequestDTO req) {
-        User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
-
-        if (!user.isCardConnected()) {
-            user.connectCard();
-        }
-
-        Map<String, Object> response = codefCardService.getCardApprovalList(userId, req);
-        List<Map<String, Object>> data = (List<Map<String, Object>>) response.get("data");
-
+    public void saveTransactions(User user, List<Map<String, Object>> data) {
         List<Transaction> transactions = data.stream()
             .map(raw -> toTransaction(raw, user))
             .toList();
