@@ -26,7 +26,7 @@ public class TransactionController {
     ) {
         Long userId = customUser.getUserId();
         transactionFacade.processTransactions(userId, req);
-        transactionSummaryService.initialize6MonthsSummary(userId);
+
         return ResponseEntity.ok().build();
     }
 
