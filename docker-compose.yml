@@ -1,0 +1,9 @@
+version: '3.8'
+
+services:
+  app:
+    image: moneyj:latest
+    ports:
+      - "8080:8080"
+    env_file:
+      - ./.env
