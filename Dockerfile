@@ -1,13 +1,10 @@
-# Dockerfile
-# ----- build stage -----
-FROM gradle:8.8-jdk17 AS build
-WORKDIR /src
-COPY . .
-RUN gradle clean bootJar --no-daemon
+# 1. 자바 17 기반의 이미지 사용
+FROM openjdk:17-jdk-slim
 
-# ----- run stage -----
-FROM eclipse-temurin:17-jre
-WORKDIR /
-COPY --from=build /src/build/libs/*-SNAPSHOT.jar /app.jar
-# JVM 옵션/프로필을 ENV로 받을 수 있게
-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar /app.jar"]
+# 2. JAR 파일을 컨테이너에 복사
+# build/libs/your-app.jar는 빌드된 파일의 경로와 이름에 맞게 수정
+ARG JAR_FILE=moneyJ_BE-0.0.1-SNAPSHOT.jar
+COPY ${JAR_FILE} app.jar
+
+# 3. 컨테이너가 실행될 때 JAR 파일 실행
+ENTRYPOINT ["java","-jar","/app.jar"]
