@@ -39,14 +39,14 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         boolean isFirstLogin = optionalUser.isEmpty();
 
         User user = optionalUser.orElseGet(() -> {
-                User newUser = new User(
+            User newUser = new User(
                     userInfo.getNickname(),
                     userInfo.getEmail(),
                     userInfo.getProfileImage(),
                     Role.ROLE_USER
-                );
-                return userRepository.save(newUser);
-            });
+            );
+            return userRepository.save(newUser);
+        });
 
         // Spring Security 세션 인증 객체 생성
         return new CustomOAuth2User(user, attributes, isFirstLogin);

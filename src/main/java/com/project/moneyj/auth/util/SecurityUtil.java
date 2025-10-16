@@ -9,11 +9,22 @@ import org.springframework.security.core.context.SecurityContextHolder;
 public class SecurityUtil {
 
     public static Long getCurrentUserId() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            // 혹은 예외를 던지는 등 비인증 상태 처리
             return null;
         }
-        return ((CustomOAuth2User) auth.getPrincipal()).getUserId();
+
+        Object principal = authentication.getPrincipal();
+
+        if (principal instanceof CustomOAuth2User) {
+            return ((CustomOAuth2User) principal).getUserId();
+        }
+
+        // CustomOAuth2User 타입이 아닌 경우 (예: 익명 사용자 등)
+        // 이 로직에서는 발생하면 안되지만, 방어적 코드로 null 반환
+        return null;
     }
 
 }

@@ -3,7 +3,7 @@ package com.project.moneyj.transaction.controller;
 import com.project.moneyj.analysis.service.TransactionSummaryService;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
 import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
-import com.project.moneyj.transaction.service.TransactionService;
+import com.project.moneyj.transaction.service.TransactionFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 @RequestMapping("/transactions")
 public class TransactionController {
-    private final TransactionService transactionService;
+    private final TransactionFacade transactionFacade;
     private final TransactionSummaryService transactionSummaryService;
 
     @PostMapping("/save")
@@ -25,8 +25,8 @@ public class TransactionController {
         @RequestBody CardApprovalRequestDTO req
     ) {
         Long userId = customUser.getUserId();
-        transactionService.saveTransactions(userId, req);
-        transactionSummaryService.initialize6MonthsSummary(userId);
+        transactionFacade.processTransactions(userId, req);
+
         return ResponseEntity.ok().build();
     }
 

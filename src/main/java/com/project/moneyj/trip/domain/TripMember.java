@@ -55,6 +55,7 @@ public class TripMember {
         tripPlan.getTripMemberList().add(this);
     }
 
+
     public void switchIsConsumed(boolean consumed) {
         for (Category category : categoryList) {
             category.changeConsumptionStatus(consumed);

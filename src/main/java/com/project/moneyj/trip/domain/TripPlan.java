@@ -66,6 +66,11 @@ public class TripPlan {
     }
 
     public void updateTotalBudget(Integer amount){
+
         this.totalBudget += amount;
     }
+    public void updateMembersCount(Integer membersCount){
+        this.membersCount = membersCount;
+    }
+
 }

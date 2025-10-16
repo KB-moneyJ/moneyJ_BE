@@ -16,7 +16,6 @@ tmp/
 .env
 setenv.sh
 database.sql
-docker-compose.yml
 
 # Spring 설정(예: 로컬 전용/실제 민감정보는 무시)
 application.yml

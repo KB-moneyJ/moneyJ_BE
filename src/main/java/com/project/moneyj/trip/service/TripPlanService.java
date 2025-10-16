@@ -186,6 +186,12 @@ public class TripPlanService {
         TripPlan existingPlan = tripPlanRepository.findById(planId)
                 .orElseThrow(() -> new IllegalArgumentException("여행 플랜을 찾을 수 없습니다!" + planId));
 
+
+        // 여행 플랜 카테고리
+        TripMember tripMember = tripMemberRepository.findTripMemberByTripPlanId(planId).get(0);
+
+        List<Category> categoryList = categoryRepository.findByTripPlanIdAndTripMemberId(planId, tripMember.getTripMemberId());
+
         // 사용자 조회
         for (String email : addDTO.getEmail()) {
             User user = userRepository.findByEmail(email)
@@ -195,13 +201,29 @@ public class TripPlanService {
                 throw new IllegalArgumentException("이미 여행에 참여하고 있는 멤버입니다! " + email);
             }
 
-            TripMember tripMember = TripMember.builder()
+
+            TripMember addTripMember = TripMember.builder()
                     .user(user)
                     .memberRole(MemberRole.MEMBER)
                     .build();
 
-            tripMember.addTripMember(existingPlan);
+            addTripMember.addTripMember(existingPlan);
+
+            for (Category category : categoryList) {
+                Category newCategory = Category.builder()
+                        .tripMember(addTripMember)
+                        .tripPlan(existingPlan)
+                        .categoryName(category.getCategoryName())
+                        .amount(category.getAmount())
+                        .build();
+                categoryRepository.save(newCategory);
+            }
+
         }
+
+        List<TripMember> tripMemberList = tripMemberRepository.findTripMemberByTripPlanId(planId);
+        existingPlan.updateMembersCount(tripMemberList.size());
+
         return new TripPlanResponseDTO(planId, "멤버 추가 완료");
 
     }
