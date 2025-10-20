@@ -34,10 +34,20 @@ public class TransactionService {
             DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
         );
 
+        // 실제 승인/취소 금액 계산
+        int resUsedAmount = Integer.parseInt((String) raw.get("resUsedAmount"));
+        String resCancelYN = (String) raw.get("resCancelYN");
+        String resCancelAmount = (String) raw.get("resCancelAmount");
+        int cancelAmount = (resCancelAmount == null || resCancelAmount.isEmpty()) ? 0 : Integer.parseInt(resCancelAmount);
+        int actualAmount = "0".equals(resCancelYN)
+            ? resUsedAmount
+            : (cancelAmount > 0 ? resUsedAmount - cancelAmount : resUsedAmount);
+
+
         return Transaction.builder()
             .user(user)
             .usedDateTime(usedDateTime)
-            .usedAmount(Integer.valueOf((String) raw.get("resUsedAmount")))
+            .usedAmount(actualAmount)
             .storeName((String) raw.get("resMemberStoreName"))
             .storeCorpNo((String) raw.get("resMemberStoreCorpNo"))
             .storeAddr((String) raw.get("resMemberStoreAddr"))
