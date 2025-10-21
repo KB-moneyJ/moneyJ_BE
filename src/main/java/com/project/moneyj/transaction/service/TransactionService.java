@@ -35,14 +35,16 @@ public class TransactionService {
         );
 
         // 실제 승인/취소 금액 계산
-        int resUsedAmount = Integer.parseInt((String) raw.get("resUsedAmount"));
-        String resCancelYN = (String) raw.get("resCancelYN");
-        String resCancelAmount = (String) raw.get("resCancelAmount");
-        int cancelAmount = (resCancelAmount == null || resCancelAmount.isEmpty()) ? 0 : Integer.parseInt(resCancelAmount);
-        int actualAmount = "0".equals(resCancelYN)
-            ? resUsedAmount
-            : (cancelAmount > 0 ? resUsedAmount - cancelAmount : resUsedAmount);
+        String rawUsed = (String) raw.get("resUsedAmount");
+        String rawCancelYN = (String) raw.get("resCancelYN");
+        String rawCancelAmount = (String) raw.get("resCancelAmount");
 
+        int usedAmount = safeParseInt(rawUsed);
+        int cancelAmount = safeParseInt(rawCancelAmount);
+
+        int actualAmount = "0".equals(rawCancelYN)
+            ? usedAmount
+            : (cancelAmount > 0 ? usedAmount - cancelAmount : usedAmount);
 
         return Transaction.builder()
             .user(user)
@@ -58,5 +60,14 @@ public class TransactionService {
                 (String) raw.get("resMemberStoreType")))
             .updateAt(LocalDateTime.now())
             .build();
+    }
+
+    private int safeParseInt(String value) {
+        if (value == null || value.isEmpty()) return 0;
+        try {
+            return (int) Double.parseDouble(value.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 }
