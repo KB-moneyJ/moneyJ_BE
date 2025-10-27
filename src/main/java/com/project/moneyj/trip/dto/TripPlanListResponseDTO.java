@@ -23,6 +23,7 @@ public class TripPlanListResponseDTO {
     private LocalDate tripStartDate;
     private LocalDate tripEndDate;
     private Integer totalBudget;
+    private Integer memberCount;
 
     public static TripPlanListResponseDTO fromEntity(TripPlan entity){
         return new TripPlanListResponseDTO(
@@ -32,7 +33,8 @@ public class TripPlanListResponseDTO {
                 entity.getCity(),
                 entity.getTripStartDate(),
                 entity.getTripEndDate(),
-                entity.getTotalBudget()
+                entity.getTotalBudget(),
+                entity.getMembersCount()
         );
     }
 }
