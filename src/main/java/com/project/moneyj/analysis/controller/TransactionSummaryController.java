@@ -4,7 +4,6 @@ import com.project.moneyj.analysis.dto.MonthlySummaryDTO.CategorySummaryDTO;
 import com.project.moneyj.analysis.dto.SummaryResponseDTO;
 import com.project.moneyj.analysis.service.TransactionSummaryService;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.transaction.domain.TransactionCategory;
 import java.time.YearMonth;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -40,12 +39,9 @@ public class TransactionSummaryController implements TransactionSummaryControlle
         @RequestParam String month,
         @RequestParam String category
     ) {
-        TransactionCategory categoryEnum = TransactionCategory.valueOf(category.toUpperCase());
-
-        return transactionSummaryService
-            .getMonthlyCategorySummary(customUser.getUserId(), month, categoryEnum)
-            .map(ResponseEntity::ok)
-            .orElseGet(() -> ResponseEntity.notFound().build());
+        return ResponseEntity.ok(
+            transactionSummaryService.getMonthlyCategorySummary(customUser.getUserId(), month, category)
+        );
     }
 
 }

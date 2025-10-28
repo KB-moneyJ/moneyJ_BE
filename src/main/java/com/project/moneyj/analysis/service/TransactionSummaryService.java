@@ -6,6 +6,10 @@ import com.project.moneyj.analysis.dto.MonthlySummaryDTO;
 import com.project.moneyj.analysis.dto.MonthlySummaryDTO.CategorySummaryDTO;
 import com.project.moneyj.analysis.dto.SummaryResponseDTO;
 import com.project.moneyj.analysis.repository.TransactionSummaryRepository;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.TransactionErrorCode;
+import com.project.moneyj.exception.code.TransactionSummaryErrorCode;
+import com.project.moneyj.exception.code.UserErrorCode;
 import com.project.moneyj.transaction.domain.Transaction;
 import com.project.moneyj.transaction.domain.TransactionCategory;
 import com.project.moneyj.transaction.repository.TransactionRepository;
@@ -15,12 +19,12 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import lombok.RequiredArgsConstructor;
@@ -38,7 +42,7 @@ public class TransactionSummaryService {
     @Transactional(readOnly = true)
     public SummaryResponseDTO getRecent6MonthsSummary(Long userId, String baseYearMonth) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
+            .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
         boolean idCardConnected = user.isCardConnected();
 
         // 6개월 요약 데이터 리스트를 조회
@@ -96,7 +100,7 @@ public class TransactionSummaryService {
     @Transactional
     public void initialize6MonthsSummary(Long userId) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("유저 없음"));
+            .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
         YearMonth base = YearMonth.now();
         YearMonth from = base.minusMonths(5); // 최근 6개월 시작
@@ -144,7 +148,7 @@ public class TransactionSummaryService {
         if (newTransactions.isEmpty()) return;
 
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new RuntimeException("유저 없음"));
+            .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
         YearMonth currentMonth = YearMonth.now();
 
@@ -197,9 +201,22 @@ public class TransactionSummaryService {
     }
 
     @Transactional(readOnly = true)
-    public Optional<CategorySummaryDTO> getMonthlyCategorySummary(Long userId, String month, TransactionCategory category) {
+    public CategorySummaryDTO getMonthlyCategorySummary(
+        Long userId,
+        String month,
+        String category
+    ) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
+
+        TransactionCategory transactionCategory = Arrays.stream(TransactionCategory.values())
+            .filter(c -> c.name().equalsIgnoreCase(category))
+            .findFirst()
+            .orElseThrow(() -> MoneyjException.of(TransactionErrorCode.INVALID_CATEGORY));
+
         return transactionSummaryRepository
-            .findByUser_UserIdAndSummaryMonthAndTransactionCategory(userId, month, category)
-            .map(CategorySummaryDTO::from);
+            .findByUser_UserIdAndSummaryMonthAndTransactionCategory(user.getUserId(), month, transactionCategory)
+            .map(CategorySummaryDTO::from)
+            .orElseThrow(() -> MoneyjException.of(TransactionSummaryErrorCode.NOT_FOUND));
     }
 }
