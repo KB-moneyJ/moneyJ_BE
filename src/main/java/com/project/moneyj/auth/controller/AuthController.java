@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/auth")
-public class AuthController {
+public class AuthController implements AuthControllerApiSpec{
 
     @GetMapping("/validate")
     public ResponseEntity<SessionResponseDTO> validateSession(HttpServletRequest request) {

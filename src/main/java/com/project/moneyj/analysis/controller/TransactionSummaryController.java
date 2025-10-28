@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/summary")
-public class TransactionSummaryController {
+public class TransactionSummaryController implements TransactionSummaryControllerApiSpec {
     private final TransactionSummaryService transactionSummaryService;
 
     @GetMapping()
