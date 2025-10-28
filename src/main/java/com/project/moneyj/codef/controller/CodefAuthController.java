@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/codef")
-public class CodefAuthController {
+public class CodefAuthController implements CodefAuthControllerApiSpec{
 
 
     private final CodefAuthService codefAuthService;
@@ -102,14 +102,6 @@ public class CodefAuthController {
         Long userId = customUser.getUserId();
         return ResponseEntity.ok(bankSvc.fetchTransactions(userId, req));
     }
-
-    // 카드 자격 추가 (userId는 쿼리나 PathVariable로 전달)
-//    @PostMapping("/credential")
-//    public ResponseEntity<?> addCredential(@RequestParam Long userId,
-//                                                @RequestBody CardCredentialAddRequestDTO req) {
-//
-//        return ResponseEntity.ok(cardService.addCardCredential(userId, req));
-//    }
 
     /**
      * 보유 카드 목록 조회
