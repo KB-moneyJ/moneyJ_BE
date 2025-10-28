@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/codef/accounts")
-public class AccountController {
+public class AccountController implements AccountControllerApiSpec{
 
     private final AccountService accountService;
 
