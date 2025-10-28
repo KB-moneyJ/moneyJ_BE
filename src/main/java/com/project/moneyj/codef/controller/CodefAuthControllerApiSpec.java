@@ -19,7 +19,6 @@ public interface CodefAuthControllerApiSpec {
 
     @Operation(summary = "CODEF 토큰 발급 (테스트용)", description = "CODEF API 호출을 위한 엑세스 토큰을 발급받습니다.")
     @ApiResponse(responseCode = "200", description = "토큰 발급 성공")
-    @GetMapping("/token")
     ResponseEntity<?> getToken();
 
     @Operation(summary = "커넥티드 ID 발급", description = "CODEF 계정 연결을 위한 커넥티드 ID를 생성합니다.")
@@ -27,54 +26,46 @@ public interface CodefAuthControllerApiSpec {
             @ApiResponse(responseCode = "200", description = "ID 발급 성공"),
             @ApiResponse(responseCode = "400", description = "계정 정보가 비어있음")
     })
-    @PostMapping("/connected-id")
     ResponseEntity<?> createConnectedId(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody AccountCreateRequestDTO request
     );
 
     @Operation(summary = "자격/계정 추가", description = "은행사/카드사의 아이디, 패스워드를 등록하여 계정을 추가합니다.")
-    @PostMapping("/credentials")
     ResponseEntity<?> addCredential(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody AccountCreateRequestDTO.AccountInput input
     ) throws Exception;
 
     @Operation(summary = "등록된 계정 목록 조회", description = "CODEF에 등록한 계정(은행/카드사) 목록을 조회합니다.")
-    @GetMapping("/credentials")
     ResponseEntity<?> listCredentials(
             @AuthenticationPrincipal CustomOAuth2User customUser);
 
     @Operation(summary = "은행 계좌 목록 조회", description = "특정 기관(은행)의 계좌 목록을 조회합니다.")
-    @GetMapping("/bank/accounts")
     ResponseEntity<?> bankAccounts(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @Parameter(description = "조회할 기관 코드") @RequestParam String organization
     );
 
     @Operation(summary = "은행 거래 내역 조회", description = "특정 계좌의 거래 내역을 조회합니다.")
-    @PostMapping("/bank/transactions")
     ResponseEntity<?> bankTransactions(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody BankTxnListReqDTO req
     );
 
     @Operation(summary = "보유 카드 목록 조회", description = "특정 기관(카드사)의 보유 카드 목록을 조회합니다.")
-    @GetMapping("/owned")
     ResponseEntity<?> ownedCards(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @Parameter(description = "조회할 기관 코드") @RequestParam String organization
     );
 
     @Operation(summary = "카드 거래 내역 조회", description = "특정 카드의 거래 내역(청구 내역)을 조회합니다.")
-    @PostMapping("/billing")
     ResponseEntity<?> billing(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody CardApprovalRequestDTO req
     );
 
     @Operation(summary = "CODEF 연결 계정 삭제", description = "CODEF에 연결된 계정(자격)을 삭제합니다.")
-    @DeleteMapping("/delete")
     ResponseEntity<?> deleteAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody AccountDeleteRequestDTO request

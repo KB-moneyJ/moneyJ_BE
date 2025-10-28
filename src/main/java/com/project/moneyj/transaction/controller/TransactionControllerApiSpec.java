@@ -18,7 +18,6 @@ public interface TransactionControllerApiSpec {
             @ApiResponse(responseCode = "200", description = "저장 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청")
     })
-    @PostMapping("/save")
     ResponseEntity<Void> saveCardTransactions(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody CardApprovalRequestDTO req
