@@ -11,7 +11,6 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @Tag(name = "Transactions", description = "거래 내역 API")
-@RequestMapping("/transactions")
 public interface TransactionControllerApiSpec {
 
     @Operation(summary = "카드 거래 내역 저장", description = "CODEF에서 조회한 카드 승인 내역(거래 내역)을 서비스 DB에 저장합니다.")
@@ -22,6 +21,7 @@ public interface TransactionControllerApiSpec {
     @PostMapping("/save")
     ResponseEntity<Void> saveCardTransactions(
             @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestBody CardApprovalRequestDTO req);
+            @RequestBody CardApprovalRequestDTO req
+    );
 
 }
