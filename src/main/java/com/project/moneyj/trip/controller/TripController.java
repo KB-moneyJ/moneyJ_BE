@@ -4,7 +4,6 @@ package com.project.moneyj.trip.controller;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
 import com.project.moneyj.transaction.service.TransactionService;
 import com.project.moneyj.trip.dto.*;
-import com.project.moneyj.trip.dto.TripPlanDetailResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanListResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanPatchRequestDTO;
 import com.project.moneyj.trip.dto.TripPlanRequestDTO;
@@ -23,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/trip-plans")
-public class TripController {
+public class TripController implements TripControllerApiSpec{
 
     private final TripPlanService tripPlanService;
     private final TransactionService transactionService;
@@ -98,6 +97,9 @@ public class TripController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 여행 멤버별 저축 금액 및 달성률
+     */
     @GetMapping("/{tripPlanId}/balances")
     public List<UserBalanceResponseDTO> getBalances(@PathVariable Long tripPlanId) {
         return tripPlanService.getUserBalances(tripPlanId);
@@ -112,7 +114,9 @@ public class TripController {
         return ResponseEntity.ok(budget);
     }
 
-    // 여행 플랜 카테고리 목표 달성 여부 변경
+    /**
+     * 여행 플랜 카테고리별 목표 달성 여부 변경
+     */
     @PostMapping("/isconsumed")
     public ResponseEntity<isConsumedResponseDTO> switchIsConsumed(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -122,7 +126,9 @@ public class TripController {
         return ResponseEntity.ok(tripPlanService.switchIsConsumed(request, userId));
     }
 
-    // 카테고리 조회
+    /**
+     * 여행 플랜 카테고리 조회
+     */
     @GetMapping("/isconsumed/{planId}")
     public ResponseEntity<List<CategoryDTO>> getIsConsumed(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -132,7 +138,9 @@ public class TripController {
         return ResponseEntity.ok(tripPlanService.getIsConsumed(planId, userId));
     }
 
-    // 카테고리 변경
+    /**
+     * 여행 플랜 카테고리 변경
+     */
     @PatchMapping("/category")
     public ResponseEntity<CategoryResponseDTO> patchCategory(
             @AuthenticationPrincipal CustomOAuth2User customUser,
