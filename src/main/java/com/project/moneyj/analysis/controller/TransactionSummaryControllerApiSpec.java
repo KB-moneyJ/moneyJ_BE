@@ -8,7 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.RequestParam;
 
-public interface TransactionSummaryApiSpec {
+public interface TransactionSummaryControllerApiSpec {
 
     @Operation(summary = "월별, 카테고리별 소비 요약 내역", description = "사용자의 월별, 카테고리별 소비 요약 내역을 반환합니다. month는 (YYYY-MM) 형태여야 합니다. category에 대소문자 모두 가능합니다.")
     ResponseEntity<CategorySummaryDTO> getMonthlyCategorySummary(
