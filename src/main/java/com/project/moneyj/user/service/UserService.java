@@ -1,6 +1,8 @@
 package com.project.moneyj.user.service;
 
 import com.project.moneyj.auth.util.SecurityUtil;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.UserErrorCode;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.dto.UserCheckRequestDTO;
 import com.project.moneyj.user.dto.UserCheckResponseDTO;
@@ -21,11 +23,11 @@ public class UserService {
     public UserResponseDTO getUser() {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId == null) {
-            throw new RuntimeException("로그인 필요");
+            throw MoneyjException.of(UserErrorCode.NOT_LOGGED_IN);
         }
 
         User user = userRepository.findByUserId(userId)
-            .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
+            .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
         return UserResponseDTO.of(user);
     }
