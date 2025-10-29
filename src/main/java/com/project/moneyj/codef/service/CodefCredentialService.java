@@ -38,39 +38,6 @@ public class CodefCredentialService {
     private final CodefInstitutionRepository codefInstitutionRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    // 2-1) 계정(자격) 추가
-//    @Transactional
-//    public String addCredential(Long userId, AccountCreateRequest.AccountInput input) throws Exception {
-//        var cid = cidRepo.findByUserId(userId)
-//                .orElseThrow(() -> new IllegalStateException("Connected ID 없음")).getConnectedId();
-//
-//        // 암호화
-//        if ("1".equals(input.getLoginType()) && input.getPassword()!=null) {
-//            input.setPassword(RsaEncryptor.encryptWithPemPublicKey(input.getPassword(), props.getPublicKey()));
-//        }
-//
-//        var req = AccountAddRequest.builder()
-//                .connectedId(cid)
-//                .accountList(List.of(input))
-//                .build();
-//
-//        String token = authService.getValidAccessToken();
-//        String url = props.getBaseUrl() + "/v1/account/add";
-//
-//        String raw = codefWebClient.post()
-//                .uri(url)
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .headers(h -> h.setBearerAuth(token))
-//                .bodyValue(req)
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//
-//        log.info("account/add raw={}", raw);
-//        // 간단 검증만(실서비스면 DTO로 매핑해서 코드 체크)
-//        return raw;
-//    }
-
     /**
      * CODEF에 계정(자격)을 추가하고, 그 결과를 DB에 저장/업데이트합니다.
      */
