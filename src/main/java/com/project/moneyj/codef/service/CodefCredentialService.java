@@ -11,6 +11,8 @@ import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
 import com.project.moneyj.codef.repository.CodefInstitutionRepository;
 import com.project.moneyj.codef.util.ApiResponseDecoder;
 import com.project.moneyj.codef.util.RsaEncryptor;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.CodefErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
@@ -45,7 +47,7 @@ public class CodefCredentialService {
     public Map<String, Object> addCredential(Long userId, AccountCreateRequestDTO.AccountInput accountInput) {
         // 1. connectedId 조회 및 비밀번호 암호화
         String connectedId = codefConnectedIdRepository.findActiveConnectedIdByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("사용자에 대한 ConnectedID가 없습니다."));
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
 
         if ("1".equals(accountInput.getLoginType()) && accountInput.getPassword() != null) {
             String encryptedPassword = RsaEncryptor.encryptWithPemPublicKey(accountInput.getPassword(), props.getPublicKey());
@@ -97,7 +99,7 @@ public class CodefCredentialService {
 
         Optional<CodefInstitution> existingOpt = codefInstitutionRepository.findByConnectedIdAndOrganization(connectedId, organization);
         CodefConnectedId codefConnectedId = codefConnectedIdRepository.findCodefConnectedIdByConnectedId(connectedId)
-                .orElseThrow(() -> new RuntimeException("커넥티드 아이디 오류"));
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
 
         if (existingOpt.isPresent()) {
             // [업데이트]
@@ -145,10 +147,10 @@ public class CodefCredentialService {
             if ("CF-00000".equals(code)) {
                 return responseMap;
             } else {
-                throw new IllegalStateException("CODEF 비즈니스 에러: " + result.get("message"));
+                throw MoneyjException.of(CodefErrorCode.BUSINESS_ERROR);
             }
         } catch (Exception e) {
-            throw new RuntimeException("CODEF 응답을 처리할 수 없습니다: " + rawResponse, e);
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
     }
 
@@ -182,7 +184,7 @@ public class CodefCredentialService {
             return objectMapper.readValue(raw, new TypeReference<>() {});
         } catch (Exception e) {
             // text/plain 등 비정형 응답일 때 디버깅 도움
-            throw new IllegalStateException("CODEF 응답 파싱 실패: " + raw, e);
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
     }
 
