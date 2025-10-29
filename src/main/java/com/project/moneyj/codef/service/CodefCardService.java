@@ -37,61 +37,6 @@ public class CodefCardService {
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
 
-    //=============== 1) 카드사 자격(계정) 추가 =================
-//    @Transactional
-//    public Map<String, Object> addCardCredential(Long userId, CardCredentialAddRequestDTO req) {
-//        String accessToken = codefAuthService.getValidAccessToken();
-//        String connectedId = connectedRepo.findActiveConnectedIdByUserId(userId)
-//                .orElseThrow(() -> new IllegalStateException("사용자에 대한 ConnectedID가 없습니다. 먼저 생성해 주세요."));
-//
-//        // loginType=1 이면 비번 RSA 암호화
-//        String encPwd = req.getPassword();
-//        if ("1".equals(req.getLoginType()) && encPwd != null) {
-//            encPwd = RsaEncryptor.encryptWithPemPublicKey(encPwd, props.getPublicKey());
-//        }
-//
-//        Map<String, Object> account = new LinkedHashMap<>();
-//        account.put("countryCode", "KR");
-//        account.put("businessType", "CD"); // 카드
-//        account.put("clientType", "P");    // 개인
-//        account.put("organization", req.getOrganization());
-//        account.put("loginType", req.getLoginType());
-//        account.put("id", req.getId());
-//        account.put("password", encPwd);
-//        if (req.getBirthDate() != null) account.put("birthDate", req.getBirthDate());
-//
-//        Map<String, Object> body = Map.of(
-//                "connectedId", connectedId,
-//                "accountList", List.of(account)
-//        );
-//
-//        String url = props.getBaseUrl() + "/v1/account/add"; // 일반적인 계정 추가
-//        // 참고: 레퍼런스 추가가 필요하면 /v1/account/reference-add 사용 (용도 차이는 하단 참고)
-//
-//        String raw = codefWebClient.post()
-//                .uri(url)
-//                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
-//                .bodyValue(body)
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//
-//        Map<String, Object> responseMap = parseCodefResponse(raw);
-//        Map<String, Object> result = (Map<String, Object>) responseMap.get("result");
-//        String code = (String) result.get("code");
-//        if (!"CF-00000".equals(code)) {
-//            throw new IllegalStateException("CODEF 계정 추가 실패: " + code + " / " + result.get("message"));
-//        }
-//
-//        User user = userRepository.findByUserId(userId).orElseThrow(() -> new IllegalStateException("존재하지 않는 사용자입니다."));
-//        Card card = Card.builder()
-//                .user(user)
-//                .cardNo(result.get())
-//                .build();
-//        return result;
-//    }
 
     /**
      * 거래 내역 조회(카드)
