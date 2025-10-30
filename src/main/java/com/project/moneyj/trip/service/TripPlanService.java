@@ -449,10 +449,7 @@ public class TripPlanService {
                 .orElseThrow(() -> new IllegalArgumentException("TripMember가 없습니다."));
 
         for (String tip : response.getMessages()) {
-            TripSavingPhrase phrase = TripSavingPhrase.builder()
-                    .tripMember(tripMember)
-                    .content(tip)
-                    .build();
+            TripSavingPhrase phrase = TripSavingPhrase.of(tripMember, tip);
             tripSavingPhraseRepository.save(phrase);
         }
     }
