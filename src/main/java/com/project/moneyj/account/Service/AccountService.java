@@ -5,6 +5,11 @@ import com.project.moneyj.account.dto.AccountLinkRequestDTO;
 import com.project.moneyj.account.dto.AccountLinkResponseDTO;
 import com.project.moneyj.account.repository.AccountRepository;
 import com.project.moneyj.codef.service.CodefBankService;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.AccountErrorCode;
+import com.project.moneyj.exception.code.CodefErrorCode;
+import com.project.moneyj.exception.code.TripPlanErrorCode;
+import com.project.moneyj.exception.code.UserErrorCode;
 import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.trip.repository.TripPlanRepository;
 import com.project.moneyj.user.domain.User;
@@ -37,14 +42,14 @@ public class AccountService {
 
         String orgCode = existingAccountOpt.isPresent() ? existingAccountOpt.get().getOrganizationCode() : request.getOrganizationCode();
         if (orgCode == null) {
-            throw new IllegalArgumentException("최초 연동 시에는 기관 코드를 반드시 포함해야 합니다.");
+            throw MoneyjException.of(CodefErrorCode.INITIAL_INSTITUTION_NOT_FOUND);
         }
 
         // 2. CODEF API를 호출하여 최신 계좌 정보를 가져옵니다.
         Map<String, Object> codefResponse = codefBankService.fetchBankAccounts(userId, orgCode);
         Map<String, Object> data = (Map<String, Object>) codefResponse.get("data");
         if (data == null || data.get("resDepositTrust") == null) {
-            throw new IllegalStateException("조회된 예금/신탁 계좌가 없습니다.");
+            throw MoneyjException.of(CodefErrorCode.BANK_ACCOUNT_NOT_FOUND);
         }
         List<Map<String, Object>> depositAccounts = (List<Map<String, Object>>) data.get("resDepositTrust");
 
@@ -72,7 +77,7 @@ public class AccountService {
         } else {
             // 3-3. 시나리오 C: '최초 연동' 요청 (DB에 계좌가 없음)
             if (request.getAccountNumber() == null) {
-                throw new IllegalArgumentException("최초 연동 시에는 연동할 계좌번호를 반드시 포함해야 합니다.");
+                throw MoneyjException.of(CodefErrorCode.INITIAL_BANK_ACCOUNT_NOT_FOUND);
             }
             finalAccount = createOrUpdateAccount(userId, request, depositAccounts, Optional.empty());
             log.info("새로운 계좌(accountNumber:{})를 연동했습니다.", request.getAccountNumber());
@@ -91,8 +96,8 @@ public class AccountService {
         String targetAccountNumber = request.getAccountNumber();
         Map<String, Object> selectedAccountData = findAccountInList(accountList, targetAccountNumber);
 
-        User user = userRepository.findByUserId(userId).orElseThrow(() -> new RuntimeException("DB에서 사용자를 찾을 수 없습니다."));
-        TripPlan tripPlan = tripPlanRepository.findById(request.getTripPlanId()).orElseThrow(() -> new RuntimeException("DB에서 여행 계획을 찾을 수 없습니다."));
+        User user = userRepository.findByUserId(userId).orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
+        TripPlan tripPlan = tripPlanRepository.findById(request.getTripPlanId()).orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
 
         Integer balance = Integer.parseInt(String.valueOf(selectedAccountData.get("resAccountBalance")));
 
@@ -116,7 +121,9 @@ public class AccountService {
         return accountList.stream()
                 .filter(acc -> accountNumber.equals(String.valueOf(acc.get("resAccount"))))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("해당 계좌(" + accountNumber + ")를 목록에서 찾을 수 없습니다."));
+                .orElseThrow(() -> MoneyjException.of(
+                        AccountErrorCode.ACCOUNT_NOT_FOUND,
+                        AccountErrorCode.ACCOUNT_NOT_FOUND.format(maskAdvanced(accountNumber))));
     }
 
     // 예시: "1234-****-5678" 형태로 마스킹
@@ -132,6 +139,6 @@ public class AccountService {
     public Integer getUserBalance(Long userId) {
         return accountRepository.findByUser_UserId(userId)
                 .map(Account::getBalance)
-                .orElseThrow(() -> new IllegalArgumentException("해당 유저의 계좌가 존재하지 않습니다."));
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
     }
 }
