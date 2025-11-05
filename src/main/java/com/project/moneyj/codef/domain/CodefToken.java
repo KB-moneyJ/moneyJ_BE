@@ -11,8 +11,6 @@ import java.time.LocalDateTime;
 
 @Entity
 @Getter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "codef_token")
 public class CodefToken {
@@ -33,6 +31,15 @@ public class CodefToken {
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
+    }
+
+    private CodefToken(String accessToken, LocalDateTime expiresAt){
+        this.accessToken = accessToken;
+        this.expiresAt = expiresAt;
+    }
+
+    public static CodefToken of(String accessToken, LocalDateTime expiresAt){
+        return new CodefToken(accessToken, expiresAt);
     }
 
     // 비즈니스 메소드

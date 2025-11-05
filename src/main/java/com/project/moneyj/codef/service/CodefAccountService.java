@@ -129,13 +129,7 @@ public class CodefAccountService {
         }
 
         // 4) DB 저장
-        connectedIdRepository.save(
-                CodefConnectedId.builder()
-                        .userId(userId)
-                        .connectedId(connectedId)
-                        .status("ACTIVE")
-                        .build()
-        );
+        connectedIdRepository.save(CodefConnectedId.of(userId, connectedId, "ACTIVE"));
 
         Map<String, Object> responseMap = parseCodefResponse(rawResponseBody);
         List<Map<String, Object>> successList = (List<Map<String, Object>>) ((Map<String, Object>) responseMap.get("data")).get("successList");

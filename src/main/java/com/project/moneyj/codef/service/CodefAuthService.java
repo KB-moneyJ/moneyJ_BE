@@ -51,10 +51,7 @@ public class CodefAuthService {
 
     private String issueFirst() {
         TokenResponseDTO res = requestAccessToken();
-        var newToken = CodefToken.builder()
-                .accessToken(res.getAccessToken())
-                .expiresAt(LocalDateTime.now().plusSeconds(res.getExpiresIn()))
-                .build();
+        var newToken = CodefToken.of(res.getAccessToken(), LocalDateTime.now().plusSeconds(res.getExpiresIn()));
         tokenRepository.save(newToken);
         return newToken.getAccessToken();
     }

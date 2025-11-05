@@ -10,9 +10,7 @@ import java.time.LocalDateTime;
 
 @Data
 @Entity
-@Builder
 @NoArgsConstructor
-@AllArgsConstructor
 @Table(name = "codef_connected_id",
         indexes = {@Index(name="idx_user", columnList="user_id")},
         uniqueConstraints = {@UniqueConstraint(name="uk_connected_id", columnNames = "connected_id")})
@@ -35,6 +33,16 @@ public class CodefConnectedId {
     private LocalDateTime createdAt;
     @Column(name="updated_at")
     private LocalDateTime updatedAt;
+
+    private CodefConnectedId(Long userId, String connectedId, String status){
+        this.userId = userId;
+        this.connectedId = connectedId;
+        this.status = status;
+    }
+
+    public static CodefConnectedId of(Long userId, String connectedId, String status){
+        return CodefConnectedId.of(userId, connectedId, status);
+    }
 
     @PrePersist void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();

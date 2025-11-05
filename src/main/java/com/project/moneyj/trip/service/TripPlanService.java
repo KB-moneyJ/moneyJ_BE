@@ -454,10 +454,7 @@ public class TripPlanService {
                 .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
         for (String tip : response.getMessages()) {
-            TripSavingPhrase phrase = TripSavingPhrase.builder()
-                    .tripMember(tripMember)
-                    .content(tip)
-                    .build();
+            TripSavingPhrase phrase = TripSavingPhrase.of(tripMember, tip);
             tripSavingPhraseRepository.save(phrase);
         }
     }
