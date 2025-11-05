@@ -2,6 +2,8 @@ package com.project.moneyj.transaction.service;
 
 import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
 import com.project.moneyj.codef.service.CodefCardService;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.UserErrorCode;
 import com.project.moneyj.transaction.domain.event.TransactionRequestEvent;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
@@ -21,7 +23,7 @@ public class TransactionFacade {
     @Transactional
     public void processTransactions(Long userId, CardApprovalRequestDTO req) {
         User user = userRepository.findById(userId)
-            .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
+                .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
         if (!user.isCardConnected()) {
             user.connectCard();

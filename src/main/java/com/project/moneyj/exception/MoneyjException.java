@@ -11,7 +11,13 @@ public class MoneyjException extends RuntimeException {
         this.errorCode = errorCode;
     }
 
-    public static MoneyjException of(ErrorCode errorCode) {
-        return new MoneyjException(errorCode);
+    public static MoneyjException of(ErrorCode errorCode) {return new MoneyjException(errorCode);}
+
+    public MoneyjException(ErrorCode code, String detailMessage) {
+        super(detailMessage);
+        this.errorCode = code;
+    }
+    public static MoneyjException of(ErrorCode code, String detailMessage) {
+        return new MoneyjException(code, detailMessage);
     }
 }

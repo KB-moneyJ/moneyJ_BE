@@ -4,6 +4,8 @@ import com.project.moneyj.codef.config.CodefProperties;
 import com.project.moneyj.codef.domain.CodefToken;
 import com.project.moneyj.codef.dto.TokenResponseDTO;
 import com.project.moneyj.codef.repository.CodefTokenRepository;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.CodefErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.MediaType;
@@ -96,6 +98,6 @@ public class CodefAuthService {
                 .retrieve()
                 .bodyToMono(TokenResponseDTO.class)
                 .blockOptional()
-                .orElseThrow(() -> new IllegalStateException("CODEF 토큰 응답 파싱 실패"));
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.TOKEN_PARSE_FAILED));
     }
 }

@@ -10,6 +10,9 @@ import com.project.moneyj.codef.dto.CardCredentialAddRequestDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
 import com.project.moneyj.codef.util.ApiResponseDecoder;
 import com.project.moneyj.codef.util.RsaEncryptor;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.CodefErrorCode;
+import com.project.moneyj.exception.code.UserErrorCode;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,61 +40,6 @@ public class CodefCardService {
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
 
-    //=============== 1) 카드사 자격(계정) 추가 =================
-//    @Transactional
-//    public Map<String, Object> addCardCredential(Long userId, CardCredentialAddRequestDTO req) {
-//        String accessToken = codefAuthService.getValidAccessToken();
-//        String connectedId = connectedRepo.findActiveConnectedIdByUserId(userId)
-//                .orElseThrow(() -> new IllegalStateException("사용자에 대한 ConnectedID가 없습니다. 먼저 생성해 주세요."));
-//
-//        // loginType=1 이면 비번 RSA 암호화
-//        String encPwd = req.getPassword();
-//        if ("1".equals(req.getLoginType()) && encPwd != null) {
-//            encPwd = RsaEncryptor.encryptWithPemPublicKey(encPwd, props.getPublicKey());
-//        }
-//
-//        Map<String, Object> account = new LinkedHashMap<>();
-//        account.put("countryCode", "KR");
-//        account.put("businessType", "CD"); // 카드
-//        account.put("clientType", "P");    // 개인
-//        account.put("organization", req.getOrganization());
-//        account.put("loginType", req.getLoginType());
-//        account.put("id", req.getId());
-//        account.put("password", encPwd);
-//        if (req.getBirthDate() != null) account.put("birthDate", req.getBirthDate());
-//
-//        Map<String, Object> body = Map.of(
-//                "connectedId", connectedId,
-//                "accountList", List.of(account)
-//        );
-//
-//        String url = props.getBaseUrl() + "/v1/account/add"; // 일반적인 계정 추가
-//        // 참고: 레퍼런스 추가가 필요하면 /v1/account/reference-add 사용 (용도 차이는 하단 참고)
-//
-//        String raw = codefWebClient.post()
-//                .uri(url)
-//                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-//                .contentType(MediaType.APPLICATION_JSON)
-//                .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
-//                .bodyValue(body)
-//                .retrieve()
-//                .bodyToMono(String.class)
-//                .block();
-//
-//        Map<String, Object> responseMap = parseCodefResponse(raw);
-//        Map<String, Object> result = (Map<String, Object>) responseMap.get("result");
-//        String code = (String) result.get("code");
-//        if (!"CF-00000".equals(code)) {
-//            throw new IllegalStateException("CODEF 계정 추가 실패: " + code + " / " + result.get("message"));
-//        }
-//
-//        User user = userRepository.findByUserId(userId).orElseThrow(() -> new IllegalStateException("존재하지 않는 사용자입니다."));
-//        Card card = Card.builder()
-//                .user(user)
-//                .cardNo(result.get())
-//                .build();
-//        return result;
-//    }
 
     /**
      * 거래 내역 조회(카드)
@@ -100,7 +48,7 @@ public class CodefCardService {
         String accessToken = codefAuthService.getValidAccessToken();
 
         String connectedId = connectedRepo.findActiveConnectedIdByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("사용자에 대한 ConnectedID가 없습니다. 먼저 생성해 주세요."));
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("organization", req.getOrganization());
@@ -162,10 +110,10 @@ public class CodefCardService {
         // 1. API 호출에 필요한 정보 준비
         String accessToken = codefAuthService.getValidAccessToken();
         String connectedId = connectedRepo.findActiveConnectedIdByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("사용자에 대한 ConnectedID가 없습니다."));
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
 
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("존재하지 않는 사용자입니다. userId=" + userId));
+                .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
         // 2. CODEF 보유카드 목록 조회 API 호출
         Map<String, Object> body = Map.of(
@@ -191,7 +139,7 @@ public class CodefCardService {
         String code = (String) result.get("code");
         if (!"CF-00000".equals(code)) {
             log.error("CODEF 카드 목록 조회 실패: {}", result);
-            throw new IllegalStateException("CODEF 카드 목록 조회에 실패했습니다: " + result.get("message"));
+            throw MoneyjException.of(CodefErrorCode.CARD_LIST_FAILED);
         }
 
         // 3. 응답 데이터 파싱 및 카드 목록 추출
@@ -265,10 +213,10 @@ public class CodefCardService {
             if ("CF-00000".equals(code)) {
                 return responseMap;
             } else {
-                throw new IllegalStateException("CODEF 비즈니스 에러: " + result.get("message"));
+                throw MoneyjException.of(CodefErrorCode.BUSINESS_ERROR);
             }
         } catch (Exception e) {
-            throw new RuntimeException("CODEF 응답을 처리할 수 없습니다: " + rawResponse, e);
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
     }
 
@@ -278,7 +226,7 @@ public class CodefCardService {
             return objectMapper.readValue(raw, new TypeReference<>() {});
         } catch (Exception e) {
             // text/plain 등 비정형 응답일 때 디버깅 도움
-            throw new IllegalStateException("CODEF 응답 파싱 실패: " + raw, e);
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
     }
 }
