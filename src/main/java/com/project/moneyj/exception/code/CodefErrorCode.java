@@ -12,12 +12,15 @@ public enum CodefErrorCode implements ErrorCode {
     // 404 NOT_FOUND
     CONNECTED_ID_NOT_FOUND(HttpStatus.NOT_FOUND, "CF001", "사용자의 Connected ID를 찾을 수 없습니다."),
     INSTITUTION_NOT_FOUND(HttpStatus.NOT_FOUND, "CF002", "DB에서 해당 기관 정보를 찾을 수 없습니다."),
+    INITIAL_INSTITUTION_NOT_FOUND(HttpStatus.NOT_FOUND, "CF003", "최초 연동시에는 기관 코드를 입력해야합니다."),
+    INITIAL_BANK_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "CF004", "최초 연동시에는 계좌 번호를 입력해야합니다."),
 
     // 400 BAD_REQUEST (또는 비즈니스 로직 에러)
     BUSINESS_ERROR(HttpStatus.BAD_REQUEST, "CF003", "CODEF 비즈니스 에러가 발생했습니다."),
     REGISTRATION_FAILED(HttpStatus.BAD_REQUEST, "CF004", "CODEF 계정 등록에 실패했습니다."),
     DELETION_FAILED(HttpStatus.BAD_REQUEST, "CF005", "CODEF 계정 삭제에 실패했습니다."),
     CARD_LIST_FAILED(HttpStatus.BAD_REQUEST, "CF006", "CODEF 카드 목록 조회에 실패했습니다."),
+    BANK_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "CF007", "연결된 계좌를 찾을 수 없습니다."),
 
     // 500 INTERNAL_SERVER_ERROR (내부 처리 또는 CODEF 응답 오류)
     RESPONSE_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CF006", "CODEF 응답을 파싱(처리)하는데 실패했습니다."),
