@@ -128,14 +128,14 @@ public class TransactionSummaryService {
                 TransactionCategory category = catEntry.getKey();
                 List<Transaction> txs = catEntry.getValue();
 
-                summaries.add(new TransactionSummary(
-                    null,
-                    user,
-                    category,
-                    month.toString(),
-                    txs.stream().mapToInt(Transaction::getUsedAmount).sum(),
-                    txs.size(),
-                    LocalDate.now()
+                summaries.add(TransactionSummary.of(
+                        null,
+                        user,
+                        category,
+                        month.toString(),
+                        txs.stream().mapToInt(Transaction::getUsedAmount).sum(),
+                        txs.size(),
+                        LocalDate.now()
                 ));
             }
         }
@@ -174,26 +174,26 @@ public class TransactionSummaryService {
             if (summaryMap.containsKey(category)) {
                 // 기존 summary 업데이트
                 TransactionSummary summary = summaryMap.get(category);
-                summary = new TransactionSummary(
-                    summary.getTransaction_summary_id(),
-                    user,
-                    category,
-                    currentMonth.toString(),
-                    summary.getTotalAmount() + newTotal,
-                    summary.getTransactionCount() + newCount,
-                    LocalDate.now()
+                summary = TransactionSummary.of(
+                        summary.getTransaction_summary_id(),
+                        user,
+                        category,
+                        currentMonth.toString(),
+                        summary.getTotalAmount() + newTotal,
+                        summary.getTransactionCount() + newCount,
+                        LocalDate.now()
                 );
                 updates.add(summary);
             } else {
                 // 이번 달에 처음 생긴 카테고리
-                updates.add(new TransactionSummary(
-                    null,
-                    user,
-                    category,
-                    currentMonth.toString(),
-                    newTotal,
-                    newCount,
-                    LocalDate.now()
+                updates.add(TransactionSummary.of(
+                        null,
+                        user,
+                        category,
+                        currentMonth.toString(),
+                        newTotal,
+                        newCount,
+                        LocalDate.now()
                 ));
             }
         }
