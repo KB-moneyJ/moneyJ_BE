@@ -45,7 +45,7 @@ public class TransactionSummary {
 
     // === 생성자 (도메인 내부용) ===
     @Builder(access = AccessLevel.PRIVATE)
-    public TransactionSummary(Long transaction_summary_id,
+    private TransactionSummary(Long transaction_summary_id,
                               User user,
                               TransactionCategory transactionCategory,
                               String summaryMonth,
