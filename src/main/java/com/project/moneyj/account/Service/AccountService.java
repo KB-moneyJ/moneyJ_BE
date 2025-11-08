@@ -103,15 +103,14 @@ public class AccountService {
 
         // 계좌가 이미 있으면 업데이트, 없으면 새로 생성
         Account account = accountOpt.orElseGet(
-                () -> Account.builder()
-                        .user(user)
-                        .tripPlan(tripPlan)
-                        .accountNumber(targetAccountNumber)
-                        .accountNumberMasked(maskAdvanced(targetAccountNumber))
-                        .balance(balance)
-                        .organizationCode(request.getOrganizationCode())
-                        .accountName((String) selectedAccountData.get("resAccountName"))
-                        .build());
+                () -> Account.of(
+                        user,
+                        tripPlan,
+                        targetAccountNumber,
+                        maskAdvanced(targetAccountNumber),
+                        balance,
+                        request.getOrganizationCode(),
+                        (String) selectedAccountData.get("resAccountName")));
 
         return accountRepository.save(account);
     }

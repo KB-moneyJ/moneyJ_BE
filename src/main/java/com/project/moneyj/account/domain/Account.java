@@ -14,9 +14,7 @@ import lombok.*;
 
 @Data
 @Entity
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "account")
 public class Account {
 
@@ -42,6 +40,46 @@ public class Account {
 
     private String accountName;
 
+    // === 기본 생성자 (내부용) ===
+    @Builder(access = AccessLevel.PRIVATE)
+    private Account(User user,
+                    TripPlan tripPlan,
+                    String accountNumber,
+                    String accountNumberMasked,
+                    Integer balance,
+                    String organizationCode,
+                    String accountName) {
+
+        this.user = user;
+        this.tripPlan = tripPlan;
+        this.accountNumber = accountNumber;
+        this.accountNumberMasked = accountNumberMasked;
+        this.balance = balance;
+        this.organizationCode = organizationCode;
+        this.accountName = accountName;
+    }
+
+    // === 정적 팩토리 메서드 ===
+    public static Account of(User user,
+                             TripPlan tripPlan,
+                             String accountNumber,
+                             String accountNumberMasked,
+                             Integer balance,
+                             String organizationCode,
+                             String accountName) {
+
+        return Account.builder()
+                .user(user)
+                .tripPlan(tripPlan)
+                .accountNumber(accountNumber)
+                .accountNumberMasked(accountNumberMasked)
+                .balance(balance)
+                .organizationCode(organizationCode)
+                .accountName(accountName)
+                .build();
+    }
+
+    // === 비즈니스 로직 ===
     public void updateBalance(Integer balance) {
         this.balance = balance;
     }
