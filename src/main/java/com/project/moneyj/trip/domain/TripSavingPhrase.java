@@ -18,10 +18,13 @@ public class TripSavingPhrase {
 
     private String content;
 
+    // === 생성자 (도메인 내부용) ===
     private TripSavingPhrase(TripMember tripMember, String content){
         this.tripMember = tripMember;
         this.content = content;
     }
+
+    // === 정적 팩토리 메서드 ===
     public static TripSavingPhrase of(TripMember tripMember, String content){
         return new TripSavingPhrase(tripMember, content);
     }

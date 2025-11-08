@@ -71,35 +71,34 @@ public class TripPlanService {
         // 멤버들 id 조회
         List<User> members = userRepository.findAllByEmailIn(requestDTO.getTripMemberEmail());
 
-        TripPlan tripPlan = TripPlan.builder()
-                .country(requestDTO.getCountry())
-                .countryCode(requestDTO.getCountryCode())
-                .city(requestDTO.getCity())
-                .membersCount(members.size())
-                .days(requestDTO.getDays())
-                .nights(requestDTO.getNights())
-                .tripStartDate(requestDTO.getTripStartDate())
-                .tripEndDate(requestDTO.getTripEndDate())
-                .totalBudget(requestDTO.getTotalBudget())
-                .startDate(requestDTO.getStartDate())
-                .targetDate(requestDTO.getTargetDate())
-                .build();
+        TripPlan tripPlan = TripPlan.of(
+                members.size(),
+                requestDTO.getCountry(),
+                requestDTO.getCountryCode(),
+                requestDTO.getCity(),
+                requestDTO.getDays(),
+                requestDTO.getNights(),
+                requestDTO.getTripStartDate(),
+                requestDTO.getTripEndDate(),
+                requestDTO.getTotalBudget(),
+                requestDTO.getStartDate(),
+                requestDTO.getTargetDate());
 
         TripPlan saved = tripPlanRepository.save(tripPlan);
 
         // 모든 멤버 등록
         for (User user : members) {
-            TripMember tripMember = new TripMember();
+            TripMember tripMember = TripMember.of(null,null, MemberRole.MEMBER);
             tripMember.enrollTripMember(user, saved);
 
             // 모든 멤버 같은 카테고리 및 금액 등록
             for (CategoryDTO categoryDTO : requestDTO.getCategoryDTOList()) {
-                Category category = Category.builder()
-                        .categoryName(categoryDTO.getCategoryName())
-                        .amount(categoryDTO.getAmount())
-                        .tripPlan(saved)
-                        .tripMember(tripMember)
-                        .build();
+                Category category = Category.of(
+                                categoryDTO.getCategoryName(),
+                                categoryDTO.getAmount(),
+                                false,
+                                saved,
+                                tripMember);
 
                 tripMember.getCategoryList().add(category);
             }
@@ -207,20 +206,18 @@ public class TripPlanService {
             }
 
 
-            TripMember addTripMember = TripMember.builder()
-                    .user(user)
-                    .memberRole(MemberRole.MEMBER)
-                    .build();
+            TripMember addTripMember = TripMember.of(user, null, MemberRole.MEMBER);
 
             addTripMember.addTripMember(existingPlan);
 
             for (Category category : categoryList) {
-                Category newCategory = Category.builder()
-                        .tripMember(addTripMember)
-                        .tripPlan(existingPlan)
-                        .categoryName(category.getCategoryName())
-                        .amount(category.getAmount())
-                        .build();
+                Category newCategory = Category.of(
+                                category.getCategoryName(),
+                                category.getAmount(),
+                                false,
+                                existingPlan,
+                                addTripMember);
+
                 categoryRepository.save(newCategory);
             }
 

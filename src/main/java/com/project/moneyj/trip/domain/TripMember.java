@@ -9,9 +9,7 @@ import java.util.List;
 
 @Entity
 @Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "trip_member")
 public class TripMember {
 
@@ -33,8 +31,30 @@ public class TripMember {
     private List<TripSavingPhrase> tripSavingPhrase = new ArrayList<>();
 
     @OneToMany(mappedBy = "tripMember", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @Builder.Default
     private List<Category> categoryList = new ArrayList<>();
+
+    // === 생성자 (도메인 내부용) ===
+    @Builder(access = AccessLevel.PRIVATE)
+    private TripMember(User user,
+                       TripPlan tripPlan,
+                       MemberRole memberRole) {
+
+        this.user = user;
+        this.tripPlan = tripPlan;
+        this.memberRole = memberRole;
+        this.tripSavingPhrase = new ArrayList<>();
+        this.categoryList = new ArrayList<>();
+    }
+
+    // === 정적 팩토리 메서드 ===
+    public static TripMember of(User user, TripPlan tripPlan, MemberRole memberRole) {
+
+        return TripMember.builder()
+                .user(user)
+                .tripPlan(tripPlan)
+                .memberRole(memberRole)
+                .build();
+    }
 
     // 여행 플랜 등록 연관관계 메소드
     public void enrollTripMember(User user, TripPlan tripPlan){
@@ -61,19 +81,4 @@ public class TripMember {
             category.changeConsumptionStatus(consumed);
         }
     }
-
-//            if (patchRequestDTO.getCategoryDTOList() != null) {
-//
-//        List<Category> categoryList = this.categoryList;
-//        List<CategoryDTO> categoryDTOList = patchRequestDTO.getCategoryDTOList();
-//
-//        for (int i = 0; i < categoryDTOList.size(); i++) {
-//
-//            Category existingCategory = categoryList.get(i);
-//            if(existingCategory.isConsumed()) continue;
-//
-//            CategoryDTO dto = categoryDTOList.get(i);
-//            existingCategory.update(dto);
-//        }
-//    }
 }
