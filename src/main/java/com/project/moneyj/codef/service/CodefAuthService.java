@@ -60,7 +60,7 @@ public class CodefAuthService {
         TokenResponseDTO res = requestAccessToken();
 
         CodefToken token = tokenRepository.findById(idToUpdate)
-                .orElseGet(CodefToken::new);
+                .orElseGet(CodefToken::empty);
 
         token.getToken(res);
         tokenRepository.save(token);

@@ -173,17 +173,18 @@ public class CodefAccountService {
         } else {
             // [생성]
             log.info("새로운 CodefInstitution 정보를 생성합니다.");
-            CodefInstitution newInstitution = CodefInstitution.builder()
-                    .codefConnectedId(codefConnectedId)
-                    .connectedId(connectedId) // ★★★ connectedId 설정 ★★★
-                    .organization(organization)
-                    .loginType(String.valueOf(successInfo.get("loginType")))
-                    .loginIdMasked(loginIdMasked)
-                    .status("CONNECTED")
-                    .lastVerifiedAt(LocalDateTime.now())
-                    .lastResultCode((String) successInfo.get("code"))
-                    .lastResultMsg((String) successInfo.get("message"))
-                    .build();
+            CodefInstitution newInstitution = CodefInstitution.of(
+                    codefConnectedId,
+                    connectedId,
+                    organization,
+                    String.valueOf(successInfo.get("loginType")),
+                    loginIdMasked,
+                    "CONNECTED",
+                    LocalDateTime.now(),
+                    (String) successInfo.get("code"),
+                    (String) successInfo.get("message"),
+                    null,
+                    null);
 
             codefInstitutionRepository.save(newInstitution);
         }

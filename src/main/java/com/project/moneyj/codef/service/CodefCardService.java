@@ -169,12 +169,12 @@ public class CodefCardService {
                 log.info("기존 카드 정보 업데이트: {}", cardNo);
             } else {
                 // 카드가 존재하지 않으면 새로 추가 (Insert)
-                Card newCard = Card.builder()
-                        .user(user)
-                        .cardNo(cardNo)
-                        .cardName((String) cardInfo.get("resCardName"))
-                        .organizationCode(organization) // 파라미터로 받은 기관 코드를 저장
-                        .build();
+                Card newCard = Card.of(
+                                user,
+                                cardNo,
+                                (String) cardInfo.get("resCardName"),
+                                null,
+                                organization);
                 cardRepository.save(newCard);
                 log.info("새로운 카드 정보 추가: {}", cardNo);
             }
