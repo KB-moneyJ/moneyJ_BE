@@ -462,18 +462,23 @@ public class TripPlanService {
     @Transactional
     public void checkSavingTip(Long userId, Long planId) {
 
-        // 1. 플랜 참여 여부 확인
+        // 1. 해당 플랜에 저축팁이 존재하는지 검사
+        if (tripSavingPhraseRepository.existsByUserIdAndPlanId(userId, planId)) {
+            return;
+        }
+
+        // 2. 플랜 참여 여부 확인
         boolean checkPlan = tripMemberRepository.existsByUser_UserId(userId);
 
-        // 2. 계좌 확인
+        // 3. 계좌 확인
         boolean checkAccount = accountRepository.findByUserIdAndTripPlanId(userId, planId).isPresent();
 
-        // 3. 카드 확인
+        // 4. 카드 확인
         User user = userRepository.findByUserId(userId)
                 .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
         boolean checkCard = user.isCardConnected();
 
-        // 4. 세 조건이 모두 true일 때만 실행
+        // 5. 세 조건이 모두 true일 때만 실행
         if (checkPlan && checkAccount && checkCard) {
             addSavingsTip(userId, planId);
         }
