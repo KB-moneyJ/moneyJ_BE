@@ -5,22 +5,25 @@ import com.project.moneyj.exception.code.AuthErrorCode;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.web.AuthenticationEntryPoint;
+import org.springframework.security.web.authentication.AuthenticationFailureHandler;
+import org.springframework.stereotype.Component;
 
-@AllArgsConstructor
-public class JwtAuthenticationEntryPoint implements AuthenticationEntryPoint {
+
+@Component
+@RequiredArgsConstructor
+public class CustomLoginFailureHandler implements AuthenticationFailureHandler {
 
     private final SecurityResponseUtil securityResponseUtil;
 
     @Override
-    public void commence(
+    public void onAuthenticationFailure(
         HttpServletRequest request,
         HttpServletResponse response,
-        AuthenticationException authException
+        AuthenticationException exception
     ) throws IOException {
-        securityResponseUtil.writeError(request, response, AuthErrorCode.JWT_TOKEN_IS_EMPTY);
+        securityResponseUtil.writeError(request, response, AuthErrorCode.OAUTH2_LOGIN_FAILED);
     }
 
 }

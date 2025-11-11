@@ -1,8 +1,6 @@
 package com.project.moneyj.auth.util;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.exception.ErrorCode;
 import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.AuthErrorCode;
 import com.project.moneyj.user.domain.User;
@@ -12,10 +10,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.URI;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -26,7 +22,7 @@ public class JwtFilter extends OncePerRequestFilter {
 
     private final JwtUtil jwtUtil;
     private final UserRepository userRepository; // UserRepository 주입
-    private final ObjectMapper objectMapper;
+    private final SecurityResponseUtil securityResponseUtil;
 
     @Override
     protected void doFilterInternal(
@@ -54,10 +50,10 @@ public class JwtFilter extends OncePerRequestFilter {
             setAuthentication(Long.parseLong(userIdStr));
 
         } catch (MoneyjException e) {
-            setErrorResponse(request, response, e.getErrorCode());
+            securityResponseUtil.writeError(request, response, e.getErrorCode());
             return;
         } catch (NumberFormatException e) { // userIdStr이 숫자가 아닐 경우
-            setErrorResponse(request, response, AuthErrorCode.INVALID_JWT_TOKEN);
+            securityResponseUtil.writeError(request, response, AuthErrorCode.INVALID_JWT_TOKEN);
             return;
         }
 
@@ -83,21 +79,5 @@ public class JwtFilter extends OncePerRequestFilter {
             customUser.getAuthorities()
         );
         SecurityContextHolder.getContext().setAuthentication(authToken);
-    }
-
-
-    private void setErrorResponse(HttpServletRequest request, HttpServletResponse response, ErrorCode errorCode) throws IOException {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-            errorCode.httpStatus(),
-            errorCode.message()
-        );
-        problemDetail.setTitle(errorCode.code());
-        problemDetail.setInstance(URI.create(request.getRequestURI()));
-
-        response.setStatus(errorCode.httpStatus().value());
-        response.setContentType("application/json;charset=UTF-8");
-
-        String jsonErrorResponse = objectMapper.writeValueAsString(problemDetail);
-        response.getWriter().write(jsonErrorResponse);
     }
 }
