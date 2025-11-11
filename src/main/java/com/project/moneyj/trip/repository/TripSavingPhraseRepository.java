@@ -18,4 +18,13 @@ public interface TripSavingPhraseRepository extends JpaRepository<TripSavingPhra
             where tsp.tripMember.user.userId = :userId
             """)
     List<String> findAllContentByMemberId(@Param("userId") Long userId);
+
+    @Query("""
+    select count(tsp) > 0
+    from TripSavingPhrase tsp
+    where tsp.tripMember.user.userId = :userId
+      and tsp.tripMember.tripPlan.tripPlanId = :planId
+    """)
+    boolean existsByUserIdAndPlanId(@Param("userId") Long userId, @Param("planId") Long planId);
+
 }
