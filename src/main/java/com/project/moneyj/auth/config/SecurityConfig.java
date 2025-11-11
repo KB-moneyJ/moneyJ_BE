@@ -1,12 +1,12 @@
 package com.project.moneyj.auth.config;
 
+import com.project.moneyj.auth.filter.JwtFilter;
 import com.project.moneyj.auth.handler.CustomLoginFailureHandler;
 import com.project.moneyj.auth.handler.CustomLoginSuccessHandler;
 import com.project.moneyj.auth.handler.CustomLogoutSuccessHandler;
 import com.project.moneyj.auth.handler.JwtAccessDenyHandler;
 import com.project.moneyj.auth.handler.JwtAuthenticationEntryPoint;
 import com.project.moneyj.auth.service.CustomOAuth2UserService;
-import com.project.moneyj.auth.util.JwtFilter;
 import com.project.moneyj.auth.util.JwtUtil;
 import com.project.moneyj.auth.util.SecurityResponseUtil;
 import com.project.moneyj.user.repository.UserRepository;
