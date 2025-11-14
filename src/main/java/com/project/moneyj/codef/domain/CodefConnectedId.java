@@ -40,7 +40,7 @@ public class CodefConnectedId {
 
     // === 정적 팩토리 메서드 ===
     public static CodefConnectedId of(Long userId, String connectedId, String status){
-        return CodefConnectedId.of(userId, connectedId, status);
+        return new CodefConnectedId(userId, connectedId, status);
     }
 
 
