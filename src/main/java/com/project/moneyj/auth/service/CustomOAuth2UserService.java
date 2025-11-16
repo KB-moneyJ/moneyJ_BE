@@ -39,7 +39,7 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         boolean isFirstLogin = optionalUser.isEmpty();
 
         User user = optionalUser.orElseGet(() -> {
-            User newUser = new User(
+            User newUser = User.of(
                     userInfo.getNickname(),
                     userInfo.getEmail(),
                     userInfo.getProfileImage(),

@@ -46,20 +46,17 @@ public class TransactionService {
             ? usedAmount
             : (cancelAmount > 0 ? usedAmount - cancelAmount : usedAmount);
 
-        return Transaction.builder()
-            .user(user)
-            .usedDateTime(usedDateTime)
-            .usedAmount(actualAmount)
-            .storeName((String) raw.get("resMemberStoreName"))
-            .storeCorpNo((String) raw.get("resMemberStoreCorpNo"))
-            .storeAddr((String) raw.get("resMemberStoreAddr"))
-            .storeNo((String) raw.get("resMemberStoreNo"))
-            .storeType((String) raw.get("resMemberStoreType"))
-            .approvalNo((String) raw.get("resApprovalNo"))
-            .transactionCategory(StoreCategoryMapper.mapToCategory(
-                (String) raw.get("resMemberStoreType")))
-            .updateAt(LocalDateTime.now())
-            .build();
+        return Transaction.of(user,
+                        StoreCategoryMapper.mapToCategory((String) raw.get("resMemberStoreType")),
+                        usedDateTime,
+                        actualAmount,
+                        (String) raw.get("resMemberStoreName"),
+                        (String) raw.get("resMemberStoreCorpNo"),
+                        (String) raw.get("resMemberStoreAddr"),
+                        (String) raw.get("resMemberStoreNo"),
+                        (String) raw.get("resMemberStoreType"),
+                        (String) raw.get("resApprovalNo"),
+                        LocalDateTime.now());
     }
 
     private int safeParseInt(String value) {

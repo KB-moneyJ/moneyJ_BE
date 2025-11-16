@@ -15,16 +15,12 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 
 @Entity
 @Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "users")
 public class User {
 
@@ -54,6 +50,7 @@ public class User {
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TripMember> tripMemberList = new ArrayList<>();
 
+    // === 생성자 (도메인 내부용) ===
     public User(String nickname, String email, String profileImage, Role role) {
         this.nickname = nickname;
         this.email = email;
@@ -61,6 +58,13 @@ public class User {
         this.role = role;
     }
 
+    // === 정적 팩토리 메서드 ===
+    public static User of(String nickname, String email, String profileImage, Role role){
+
+        return new User(nickname, email, profileImage, role);
+    }
+
+    // === 비즈니스 메서드 ===
     public void connectCard() {
         this.cardConnected = true;
     }

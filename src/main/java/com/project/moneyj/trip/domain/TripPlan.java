@@ -10,8 +10,6 @@ import java.util.List;
 
 @Entity
 @Getter
-@Builder
-@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "trip_plan")
 public class TripPlan {
@@ -35,8 +33,63 @@ public class TripPlan {
     private LocalDate targetDate;
 
     @OneToMany(mappedBy = "tripPlan", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @Builder.Default
     private List<TripMember> tripMemberList = new ArrayList<>();
+
+    // === 생성자 (도메인 내부용) ===
+    @Builder(access = AccessLevel.PRIVATE)
+    private TripPlan(Integer membersCount,
+                     String country,
+                     String countryCode,
+                     String city,
+                     Integer days,
+                     Integer nights,
+                     LocalDate tripStartDate,
+                     LocalDate tripEndDate,
+                     Integer totalBudget,
+                     LocalDate startDate,
+                     LocalDate targetDate) {
+
+        this.membersCount = membersCount;
+        this.country = country;
+        this.countryCode = countryCode;
+        this.city = city;
+        this.days = days;
+        this.nights = nights;
+        this.tripStartDate = tripStartDate;
+        this.tripEndDate = tripEndDate;
+        this.totalBudget = totalBudget;
+        this.startDate = startDate;
+        this.targetDate = targetDate;
+        this.tripMemberList = new ArrayList<>();
+    }
+
+    // === 정적 팩토리 메서드 ===
+    public static TripPlan of(Integer membersCount,
+                              String country,
+                              String countryCode,
+                              String city,
+                              Integer days,
+                              Integer nights,
+                              LocalDate tripStartDate,
+                              LocalDate tripEndDate,
+                              Integer totalBudget,
+                              LocalDate startDate,
+                              LocalDate targetDate){
+
+        return TripPlan.builder()
+                .membersCount(membersCount)
+                .country(country)
+                .countryCode(countryCode)
+                .city(city)
+                .days(days)
+                .nights(nights)
+                .tripStartDate(tripStartDate)
+                .tripEndDate(tripEndDate)
+                .totalBudget(totalBudget)
+                .startDate(startDate)
+                .targetDate(targetDate)
+                .build();
+    }
 
     // Patch 비즈니스 메소드
     public void update(TripPlanPatchRequestDTO patchRequestDTO){

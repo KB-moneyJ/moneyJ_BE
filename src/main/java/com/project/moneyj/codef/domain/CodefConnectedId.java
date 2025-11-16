@@ -1,16 +1,13 @@
 package com.project.moneyj.codef.domain;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.time.LocalDateTime;
 
-@Data
 @Entity
-@NoArgsConstructor
+@Getter
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "codef_connected_id",
         indexes = {@Index(name="idx_user", columnList="user_id")},
         uniqueConstraints = {@UniqueConstraint(name="uk_connected_id", columnNames = "connected_id")})
@@ -34,15 +31,18 @@ public class CodefConnectedId {
     @Column(name="updated_at")
     private LocalDateTime updatedAt;
 
+    // === 생성자 (도메인 내부용) ===
     private CodefConnectedId(Long userId, String connectedId, String status){
         this.userId = userId;
         this.connectedId = connectedId;
         this.status = status;
     }
 
+    // === 정적 팩토리 메서드 ===
     public static CodefConnectedId of(Long userId, String connectedId, String status){
-        return CodefConnectedId.of(userId, connectedId, status);
+        return new CodefConnectedId(userId, connectedId, status);
     }
+
 
     @PrePersist void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
