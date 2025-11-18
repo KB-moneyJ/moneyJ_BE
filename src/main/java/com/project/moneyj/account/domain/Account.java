@@ -12,8 +12,11 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.*;
 
-@Data
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 @Entity
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "account")
 public class Account {
@@ -40,6 +43,8 @@ public class Account {
 
     private String accountName;
 
+    private LocalDateTime lastUpdateAt;
+
     // === 기본 생성자 (내부용) ===
     @Builder(access = AccessLevel.PRIVATE)
     private Account(User user,
@@ -48,7 +53,8 @@ public class Account {
                     String accountNumberMasked,
                     Integer balance,
                     String organizationCode,
-                    String accountName) {
+                    String accountName,
+                    LocalDateTime lastUpdateAt) {
 
         this.user = user;
         this.tripPlan = tripPlan;
@@ -57,6 +63,7 @@ public class Account {
         this.balance = balance;
         this.organizationCode = organizationCode;
         this.accountName = accountName;
+        this.lastUpdateAt = lastUpdateAt;
     }
 
     // === 정적 팩토리 메서드 ===
@@ -76,12 +83,18 @@ public class Account {
                 .balance(balance)
                 .organizationCode(organizationCode)
                 .accountName(accountName)
+                .lastUpdateAt(LocalDateTime.now())
                 .build();
     }
 
     // === 비즈니스 로직 ===
     public void updateBalance(Integer balance) {
         this.balance = balance;
+        this.lastUpdateAt = LocalDateTime.now();
+    }
+
+    public boolean isStale(Duration threshold){
+        return lastUpdateAt == null || lastUpdateAt.isBefore(LocalDateTime.now().minus(threshold));
     }
 
 }
