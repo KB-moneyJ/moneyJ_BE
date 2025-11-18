@@ -6,6 +6,8 @@ import com.project.moneyj.codef.dto.BankAccountListReqDTO;
 import com.project.moneyj.codef.dto.BankTxnListReqDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
 import com.project.moneyj.codef.util.ApiResponseDecoder;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.CodefErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.MediaType;
@@ -30,7 +32,7 @@ public class CodefBankService {
     // 3-1) 계좌 목록
     public Map<String, Object> fetchBankAccounts(Long userId, String organization) {
         String cid = cidRepo.findByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("Connected ID 없음"))
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_RECEIVED))
                 .getConnectedId();
 
         BankAccountListReqDTO req = BankAccountListReqDTO.builder()
@@ -60,7 +62,7 @@ public class CodefBankService {
     // 3-2) 거래내역
     public Map<String, Object> fetchTransactions(Long userId, BankTxnListReqDTO req) {
         String cid = cidRepo.findByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("Connected ID 없음"))
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_RECEIVED))
                 .getConnectedId();
 
         // 기본값/호환 보정

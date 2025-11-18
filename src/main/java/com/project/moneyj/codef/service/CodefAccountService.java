@@ -11,6 +11,8 @@ import com.project.moneyj.codef.dto.AccountDeleteRequestDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
 import com.project.moneyj.codef.repository.CodefInstitutionRepository;
 import com.project.moneyj.codef.util.RsaEncryptor;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.CodefErrorCode;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -103,11 +105,11 @@ public class CodefAccountService {
 
         } catch (Exception e) {
             log.error("Failed to process CODEF response. Raw body: {}", rawResponseBody, e);
-            throw new IllegalStateException("CODEF 응답 처리 중 오류가 발생했습니다.", e);
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
 
         if (res == null || res.getResult() == null) {
-            throw new IllegalStateException("CODEF 응답이 비어있습니다.");
+            throw MoneyjException.of(CodefErrorCode.EMPTY_RESPONSE);
         }
 
         String code = res.getResult().getCode();
@@ -119,21 +121,15 @@ public class CodefAccountService {
         // 2-way 인증 요구(CF-03002 등)는 프론트로 그대로 전달하고 종료
         if (!"CF-00000".equals(code)) {
             // 필요 시 세부 처리 로직 추가 (2Way OTP 등)
-            throw new IllegalStateException("CODEF 계정 등록 실패: " + code + " / " + res.getResult().getMessage());
+            throw MoneyjException.of(CodefErrorCode.REGISTRATION_FAILED);
         }
 
         if (connectedId == null) {
-            throw new IllegalStateException("Connected ID 미수신");
+            throw MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_RECEIVED);
         }
 
         // 4) DB 저장
-        connectedIdRepository.save(
-                CodefConnectedId.builder()
-                        .userId(userId)
-                        .connectedId(connectedId)
-                        .status("ACTIVE")
-                        .build()
-        );
+        connectedIdRepository.save(CodefConnectedId.of(userId, connectedId, "ACTIVE"));
 
         Map<String, Object> responseMap = parseCodefResponse(rawResponseBody);
         List<Map<String, Object>> successList = (List<Map<String, Object>>) ((Map<String, Object>) responseMap.get("data")).get("successList");
@@ -159,7 +155,7 @@ public class CodefAccountService {
 
         Optional<CodefInstitution> existingOpt = codefInstitutionRepository.findByConnectedIdAndOrganization(connectedId, organization);
         CodefConnectedId codefConnectedId = codefConnectedIdRepository.findCodefConnectedIdByConnectedId(connectedId)
-                .orElseThrow(() -> new RuntimeException("커넥티드 아이디 오류"));
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
 
         if (existingOpt.isPresent()) {
             // [업데이트]
@@ -177,17 +173,18 @@ public class CodefAccountService {
         } else {
             // [생성]
             log.info("새로운 CodefInstitution 정보를 생성합니다.");
-            CodefInstitution newInstitution = CodefInstitution.builder()
-                    .codefConnectedId(codefConnectedId)
-                    .connectedId(connectedId) // ★★★ connectedId 설정 ★★★
-                    .organization(organization)
-                    .loginType(String.valueOf(successInfo.get("loginType")))
-                    .loginIdMasked(loginIdMasked)
-                    .status("CONNECTED")
-                    .lastVerifiedAt(LocalDateTime.now())
-                    .lastResultCode((String) successInfo.get("code"))
-                    .lastResultMsg((String) successInfo.get("message"))
-                    .build();
+            CodefInstitution newInstitution = CodefInstitution.of(
+                    codefConnectedId,
+                    connectedId,
+                    organization,
+                    String.valueOf(successInfo.get("loginType")),
+                    loginIdMasked,
+                    "CONNECTED",
+                    LocalDateTime.now(),
+                    (String) successInfo.get("code"),
+                    (String) successInfo.get("message"),
+                    null,
+                    null);
 
             codefInstitutionRepository.save(newInstitution);
         }
@@ -207,10 +204,10 @@ public class CodefAccountService {
             if ("CF-00000".equals(code)) {
                 return responseMap;
             } else {
-                throw new IllegalStateException("CODEF 비즈니스 에러: " + result.get("message"));
+                throw MoneyjException.of(CodefErrorCode.BUSINESS_ERROR);
             }
         } catch (Exception e) {
-            throw new RuntimeException("CODEF 응답을 처리할 수 없습니다: " + rawResponse, e);
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
     }
 
@@ -222,14 +219,14 @@ public class CodefAccountService {
 
         // 1~3 단계: 요청 본문 생성까지는 동일
         String connectedId = connectedIdRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalStateException("사용자의 Connected ID를 찾을 수 없습니다."))
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND))
                 .getConnectedId();
 
         String accessToken = codefAuthService.getValidAccessToken();
 
         String organizationCode = request.getOrganizationCode();
         CodefInstitution institutionToDelete = codefInstitutionRepository.findByConnectedIdAndOrganization(connectedId, organizationCode)
-                .orElseThrow(() -> new EntityNotFoundException("삭제할 기관 정보가 DB에 존재하지 않습니다."));
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.INSTITUTION_NOT_FOUND));
 
         Map<String, String> accountInfo = Map.of(
                 "countryCode", "KR",
@@ -251,7 +248,7 @@ public class CodefAccountService {
                 .bodyValue(body)
                 .retrieve()
                 .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class)
-                        .flatMap(errorBody -> Mono.error(new RuntimeException("CODEF API 호출 실패 (HTTP 에러): " + errorBody)))
+                        .flatMap(errorBody -> Mono.error(MoneyjException.of(CodefErrorCode.API_HTTP_ERROR)))
                 )
                 .bodyToMono(String.class)
                 .block();
@@ -275,12 +272,12 @@ public class CodefAccountService {
             } else {
                 // 코드는 정상이지만, CODEF 비즈니스 에러인 경우
                 log.error("CODEF 계정 삭제 실패: {}", decodedResponse);
-                throw new IllegalStateException("CODEF 계정 삭제에 실패했습니다: " + result.get("message"));
+                throw MoneyjException.of(CodefErrorCode.DELETION_FAILED);
             }
         } catch (Exception e) {
             // 디코딩 또는 JSON 파싱 자체에 실패하는 경우 (비표준 텍스트 응답 등)
             log.error("CODEF 응답 처리 중 심각한 오류 발생. rawResponse={}", rawResponse, e);
-            throw new RuntimeException("CODEF 응답을 처리할 수 없습니다: " + rawResponse, e);
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
     }
 }

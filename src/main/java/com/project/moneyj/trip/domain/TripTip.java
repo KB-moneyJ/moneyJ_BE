@@ -6,9 +6,9 @@ import lombok.*;
 @Entity
 @Getter
 @Builder
-@NoArgsConstructor(access = AccessLevel.PROTECTED)
-@AllArgsConstructor
 @Table(name = "trip_tip")
+@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TripTip {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -17,4 +17,15 @@ public class TripTip {
     private String country;
 
     private String tip;
+
+    // === 생성자 (도메인 내부용) ===
+    private TripTip(String country, String tip){
+        this.country = country;
+        this.tip = tip;
+    }
+
+    // === 정적 팩토리 메서드 ===
+    public static TripTip of(String country, String tip){
+        return new TripTip(country, tip);
+    }
 }

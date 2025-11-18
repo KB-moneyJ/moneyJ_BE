@@ -34,19 +34,37 @@ public class TransactionService {
             DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
         );
 
-        return Transaction.builder()
-            .user(user)
-            .usedDateTime(usedDateTime)
-            .usedAmount(Integer.valueOf((String) raw.get("resUsedAmount")))
-            .storeName((String) raw.get("resMemberStoreName"))
-            .storeCorpNo((String) raw.get("resMemberStoreCorpNo"))
-            .storeAddr((String) raw.get("resMemberStoreAddr"))
-            .storeNo((String) raw.get("resMemberStoreNo"))
-            .storeType((String) raw.get("resMemberStoreType"))
-            .approvalNo((String) raw.get("resApprovalNo"))
-            .transactionCategory(StoreCategoryMapper.mapToCategory(
-                (String) raw.get("resMemberStoreType")))
-            .updateAt(LocalDateTime.now())
-            .build();
+        // 실제 승인/취소 금액 계산
+        String rawUsed = (String) raw.get("resUsedAmount");
+        String rawCancelYN = (String) raw.get("resCancelYN");
+        String rawCancelAmount = (String) raw.get("resCancelAmount");
+
+        int usedAmount = safeParseInt(rawUsed);
+        int cancelAmount = safeParseInt(rawCancelAmount);
+
+        int actualAmount = "0".equals(rawCancelYN)
+            ? usedAmount
+            : (cancelAmount > 0 ? usedAmount - cancelAmount : usedAmount);
+
+        return Transaction.of(user,
+                        StoreCategoryMapper.mapToCategory((String) raw.get("resMemberStoreType")),
+                        usedDateTime,
+                        actualAmount,
+                        (String) raw.get("resMemberStoreName"),
+                        (String) raw.get("resMemberStoreCorpNo"),
+                        (String) raw.get("resMemberStoreAddr"),
+                        (String) raw.get("resMemberStoreNo"),
+                        (String) raw.get("resMemberStoreType"),
+                        (String) raw.get("resApprovalNo"),
+                        LocalDateTime.now());
+    }
+
+    private int safeParseInt(String value) {
+        if (value == null || value.isEmpty()) return 0;
+        try {
+            return (int) Double.parseDouble(value.trim());
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 }

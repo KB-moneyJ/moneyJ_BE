@@ -4,6 +4,11 @@ package com.project.moneyj.trip.service;
 import com.project.moneyj.account.Service.AccountService;
 import com.project.moneyj.analysis.dto.MonthlySummaryDTO;
 import com.project.moneyj.analysis.service.TransactionSummaryService;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.CategoryErrorCode;
+import com.project.moneyj.exception.code.TripMemberErrorCode;
+import com.project.moneyj.exception.code.TripPlanErrorCode;
+import com.project.moneyj.exception.code.UserErrorCode;
 import com.project.moneyj.openai.util.PromptLoader;
 import com.project.moneyj.trip.domain.*;
 import com.project.moneyj.trip.dto.*;
@@ -66,35 +71,34 @@ public class TripPlanService {
         // 멤버들 id 조회
         List<User> members = userRepository.findAllByEmailIn(requestDTO.getTripMemberEmail());
 
-        TripPlan tripPlan = TripPlan.builder()
-                .country(requestDTO.getCountry())
-                .countryCode(requestDTO.getCountryCode())
-                .city(requestDTO.getCity())
-                .membersCount(members.size())
-                .days(requestDTO.getDays())
-                .nights(requestDTO.getNights())
-                .tripStartDate(requestDTO.getTripStartDate())
-                .tripEndDate(requestDTO.getTripEndDate())
-                .totalBudget(requestDTO.getTotalBudget())
-                .startDate(requestDTO.getStartDate())
-                .targetDate(requestDTO.getTargetDate())
-                .build();
+        TripPlan tripPlan = TripPlan.of(
+                members.size(),
+                requestDTO.getCountry(),
+                requestDTO.getCountryCode(),
+                requestDTO.getCity(),
+                requestDTO.getDays(),
+                requestDTO.getNights(),
+                requestDTO.getTripStartDate(),
+                requestDTO.getTripEndDate(),
+                requestDTO.getTotalBudget(),
+                requestDTO.getStartDate(),
+                requestDTO.getTargetDate());
 
         TripPlan saved = tripPlanRepository.save(tripPlan);
 
         // 모든 멤버 등록
         for (User user : members) {
-            TripMember tripMember = new TripMember();
+            TripMember tripMember = TripMember.of(null,null, MemberRole.MEMBER);
             tripMember.enrollTripMember(user, saved);
 
             // 모든 멤버 같은 카테고리 및 금액 등록
             for (CategoryDTO categoryDTO : requestDTO.getCategoryDTOList()) {
-                Category category = Category.builder()
-                        .categoryName(categoryDTO.getCategoryName())
-                        .amount(categoryDTO.getAmount())
-                        .tripPlan(saved)
-                        .tripMember(tripMember)
-                        .build();
+                Category category = Category.of(
+                                categoryDTO.getCategoryName(),
+                                categoryDTO.getAmount(),
+                                false,
+                                saved,
+                                tripMember);
 
                 tripMember.getCategoryList().add(category);
             }
@@ -125,11 +129,11 @@ public class TripPlanService {
 
         // 여행 플랜 조회
         TripPlan plan = tripPlanRepository.findDetailById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 플랜"));
+                .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
 
         // TripMember 가 한 명도 없는 경우
         if (plan.getTripMemberList().isEmpty()) {
-            throw new IllegalArgumentException("해당 플랜에 멤버가 존재하지 않습니다!");
+            throw MoneyjException.of(TripPlanErrorCode.NO_MEMBERS_IN_PLAN);
         }
 
         User user = userRepository.findByUserId(userId)
@@ -140,7 +144,7 @@ public class TripPlanService {
 
         // Category 가 한 개도 없는 경우
         if (tripMember.getCategoryList().isEmpty()) {
-            throw new IllegalArgumentException("해당 플랜에 아직 카테고리가 없습니다.");
+            throw MoneyjException.of(CategoryErrorCode.NOT_FOUND);
         }
 
         // 문구 조회
@@ -169,7 +173,7 @@ public class TripPlanService {
     public TripPlanResponseDTO patchPlan(Long planId, TripPlanPatchRequestDTO requestDTO) {
 
         TripPlan existingPlan = tripPlanRepository.findById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("여행 플랜을 찾을 수 없습니다!: " + planId));
+                .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
 
         existingPlan.update(requestDTO);
 
@@ -184,7 +188,7 @@ public class TripPlanService {
 
         // 여행 플랜 조회
         TripPlan existingPlan = tripPlanRepository.findById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("여행 플랜을 찾을 수 없습니다!" + planId));
+                .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
 
 
         // 여행 플랜 카테고리
@@ -195,27 +199,25 @@ public class TripPlanService {
         // 사용자 조회
         for (String email : addDTO.getEmail()) {
             User user = userRepository.findByEmail(email)
-                    .orElseThrow(() -> new IllegalArgumentException("사용자를 찾을 수 없습니다!" + email));
+                    .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
             if (tripMemberRepository.findByTripPlanAndUser(existingPlan, user).isPresent()) {
-                throw new IllegalArgumentException("이미 여행에 참여하고 있는 멤버입니다! " + email);
+                throw MoneyjException.of(TripMemberErrorCode.ALREADY_EXISTS);
             }
 
 
-            TripMember addTripMember = TripMember.builder()
-                    .user(user)
-                    .memberRole(MemberRole.MEMBER)
-                    .build();
+            TripMember addTripMember = TripMember.of(user, null, MemberRole.MEMBER);
 
             addTripMember.addTripMember(existingPlan);
 
             for (Category category : categoryList) {
-                Category newCategory = Category.builder()
-                        .tripMember(addTripMember)
-                        .tripPlan(existingPlan)
-                        .categoryName(category.getCategoryName())
-                        .amount(category.getAmount())
-                        .build();
+                Category newCategory = Category.of(
+                                category.getCategoryName(),
+                                category.getAmount(),
+                                false,
+                                existingPlan,
+                                addTripMember);
+
                 categoryRepository.save(newCategory);
             }
 
@@ -236,15 +238,15 @@ public class TripPlanService {
 
         // 사용자가 존재하는지 확인
         User currentUser = userRepository.findById(currentUserId)
-                .orElseThrow(() -> new IllegalArgumentException("가입된 사용자가 아닙니다."));
+                .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
         // 해당 여행 플랜이 존재하는지 확인
         TripPlan tripPlan = tripPlanRepository.findById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 플랜입니다."));
+                .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
 
         // 사용자가 해당 플랜의 멤버인지 확인
         TripMember memberToRemove = tripMemberRepository.findByTripPlanAndUser(tripPlan, currentUser)
-                .orElseThrow(() -> new IllegalStateException("해당 여행 플랜의 멤버가 아닙니다."));
+                .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
         // TripMember 삭제
         // 고아 객체 옵션에 의해 TripPlan 의 tripMemberList 에서도 자동으로 제거 됨.
@@ -313,13 +315,13 @@ public class TripPlanService {
 
         TripPlan tripPlan = tripPlanRepository.findByTripPlanId(request.getTripPlanId());
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다!"));
+                .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
         TripMember tripMember = tripMemberRepository.findByTripPlanAndUser(tripPlan, user)
-                .orElseThrow(() -> new IllegalArgumentException("현재 사용자는 해당 여행의 멤버가 아닙니다!"));
+                .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
         Category category = categoryRepository.findByCategoryNameAndMemberIdNative(request.getCategoryName(), tripMember.getTripMemberId())
-                .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다!"));
+                .orElseThrow(() -> MoneyjException.of(CategoryErrorCode.NOT_FOUND));
 
         category.changeConsumptionStatus(request.isConsumed());
 
@@ -334,10 +336,10 @@ public class TripPlanService {
 
         TripPlan tripPlan = tripPlanRepository.findByTripPlanId(planId);
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다!"));
+                .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
         TripMember tripMember = tripMemberRepository.findByTripPlanAndUser(tripPlan, user)
-                .orElseThrow(() -> new IllegalArgumentException("현재 사용자는 해당 여행의 멤버가 아닙니다!"));
+                .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
         List<Category> categoriesList = categoryRepository.findByTripPlanIdAndTripMemberId(planId, userId);
 
@@ -353,7 +355,7 @@ public class TripPlanService {
 
         TripPlan tripPlan = tripPlanRepository.findByTripPlanId(request.getCategoryDTOList().get(0).getTripPlanId());
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 사용자입니다!"));
+                .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
         List<TripMember> tripMemberList = tripMemberRepository.findTripMemberByTripPlanId(request.getCategoryDTOList().get(0).getTripPlanId());
 
@@ -365,7 +367,7 @@ public class TripPlanService {
             for (TripMember tripMember : tripMemberList) {
 
                 Category category = categoryRepository.findByCategoryNameAndMemberIdNative(categoryDTO.getCategoryName(), tripMember.getTripMemberId())
-                        .orElseThrow(() -> new IllegalArgumentException("카테고리가 존재하지 않습니다!"));
+                        .orElseThrow(() -> MoneyjException.of(CategoryErrorCode.NOT_FOUND));
 
                 category.update(categoryDTO);
             }
@@ -394,7 +396,7 @@ public class TripPlanService {
 
         // 2. 여행 플랜 예산 조회 (목표 저축 금액)
         TripPlan tripPlan = tripPlanRepository.findById(planId)
-                .orElseThrow(() -> new IllegalArgumentException("해당 플랜이 존재하지 않습니다."));
+                .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
         int tripBudget = tripPlan.getTotalBudget();
 
         // 3. 최근 6개월 소비 내역 요약
@@ -446,13 +448,10 @@ public class TripPlanService {
 
         // 6. TripMember 조회 후 DB 저장
         TripMember tripMember = tripMemberRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("TripMember가 없습니다."));
+                .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
         for (String tip : response.getMessages()) {
-            TripSavingPhrase phrase = TripSavingPhrase.builder()
-                    .tripMember(tripMember)
-                    .content(tip)
-                    .build();
+            TripSavingPhrase phrase = TripSavingPhrase.of(tripMember, tip);
             tripSavingPhraseRepository.save(phrase);
         }
     }
@@ -468,7 +467,7 @@ public class TripPlanService {
 
         // 3. 카드 확인
         User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> new IllegalArgumentException("사용자 없음!"));
+                .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
         boolean checkCard = user.isCardConnected();
 
         // 4. 세 조건이 모두 true일 때만 실행

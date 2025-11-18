@@ -14,18 +14,17 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import java.time.LocalDate;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+
+import lombok.*;
 
 @Entity
 @Getter
-@Builder
-@AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "transaction_summary", uniqueConstraints = {
-    @UniqueConstraint(columnNames = {"user_id", "yearMonth", "transactionCategory"})
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@Table(
+    name = "transaction_summary",
+    uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"user_id", "yearMonth", "transactionCategory"
+    })
 })
 public class TransactionSummary {
     @Id
@@ -43,4 +42,43 @@ public class TransactionSummary {
     private Integer totalAmount = 0;
     private Integer transactionCount = 0;
     private LocalDate updateAt;
+
+    // === 생성자 (도메인 내부용) ===
+    @Builder(access = AccessLevel.PRIVATE)
+    private TransactionSummary(Long transaction_summary_id,
+                              User user,
+                              TransactionCategory transactionCategory,
+                              String summaryMonth,
+                              Integer totalAmount,
+                              Integer transactionCount,
+                              LocalDate updateAt) {
+
+        this.transaction_summary_id = transaction_summary_id;
+        this.user = user;
+        this.transactionCategory = transactionCategory;
+        this.summaryMonth = summaryMonth;
+        this.totalAmount = totalAmount;
+        this.transactionCount = transactionCount;
+        this.updateAt = updateAt;
+    }
+
+    // === 정적 팩토리 메서드 ===
+    public static TransactionSummary of(Long transaction_summary_id,
+                                        User user,
+                                        TransactionCategory transactionCategory,
+                                        String summaryMonth,
+                                        Integer totalAmount,
+                                        Integer transactionCount,
+                                        LocalDate updateAt) {
+
+        return TransactionSummary.builder()
+                .transaction_summary_id(transaction_summary_id)
+                .user(user)
+                .transactionCategory(transactionCategory)
+                .summaryMonth(summaryMonth)
+                .totalAmount(totalAmount)
+                .transactionCount(transactionCount)
+                .updateAt(updateAt)
+                .build();
+    }
 }

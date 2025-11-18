@@ -1,21 +1,23 @@
 package com.project.moneyj.auth.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.project.moneyj.auth.domain.TempAuthCode;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.auth.dto.TokenResponse;
+import com.project.moneyj.auth.repository.TempAuthCodeRepository;
 import com.project.moneyj.auth.service.CustomOAuth2UserService;
 import com.project.moneyj.auth.util.JwtFilter;
 import com.project.moneyj.auth.util.JwtUtil;
-import com.project.moneyj.auth.dto.TokenResponse;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.moneyj.auth.util.JwtUtil;
 import com.project.moneyj.user.repository.UserRepository;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.Arrays;
+import java.util.UUID;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -25,11 +27,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Arrays;
 
 @RequiredArgsConstructor
 @EnableWebSecurity
@@ -38,7 +35,9 @@ public class SecurityConfig {
 
     private final CustomOAuth2UserService customOAuth2UserService;
     private final JwtUtil jwtUtil;
-    private final UserRepository userRepository; // UserRepository 주입
+    private final UserRepository userRepository;
+    private final TempAuthCodeRepository tempAuthCodeRepository;
+    private final ObjectMapper objectMapper;
 
     @Value("${spring.redirect.frontend-url}")
     private String frontendUrl;
@@ -65,13 +64,18 @@ public class SecurityConfig {
                         )
                         .successHandler((request, response, authentication) -> {
                             CustomOAuth2User customUser = (CustomOAuth2User) authentication.getPrincipal();
-                            String jwtToken = jwtUtil.generateToken(customUser.getName()); // getName()은 userId를 String으로 반환
 
-                            String redirectPath = customUser.isFirstLogin() ? "/agree" : "/home";
-                            String redirectUrl = frontendUrl + redirectPath +
-                                    "?token=" + jwtToken +
-                                    "&isFirstLogin=" + customUser.isFirstLogin();
+                            // 임시 토큰 발급 및 프론트로 리다이렉트
+                            String tempCode = UUID.randomUUID().toString();
 
+                            TempAuthCode tempAuthCode = TempAuthCode.of(
+                                tempCode,
+                                customUser.getUserId(),
+                                customUser.isFirstLogin()
+                            );
+                            tempAuthCodeRepository.save(tempAuthCode);
+
+                            String redirectUrl = frontendUrl + "/oauth/callback?code=" + tempCode;
                             response.sendRedirect(redirectUrl);
                         })
 

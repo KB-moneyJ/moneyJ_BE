@@ -1,5 +1,8 @@
 package com.project.moneyj.openai.util;
 
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.PromptErrorCode;
+
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -15,7 +18,7 @@ public class PromptLoader {
     public static String load(final String path) {
         try (InputStream inputStream = PromptLoader.class.getResourceAsStream(path)) {
             if (inputStream == null) {
-                throw new IllegalArgumentException("리소스 경로 읽기 실패: " + path);
+                throw MoneyjException.of(PromptErrorCode.RESOURCE_NOT_FOUND);
             }
             try (BufferedReader reader = new BufferedReader(
                     new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
