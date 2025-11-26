@@ -34,10 +34,7 @@ import com.project.moneyj.user.repository.UserRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -391,6 +388,14 @@ public class TripPlanService {
      */
     @Transactional
     public void addSavingsTip(Long userId, Long planId) {
+
+        //트랜잭션 잠금
+        TripMember member = tripMemberRepository.findMemberForUpdate(userId, planId);
+
+        if (tripSavingPhraseRepository.existsByUserIdAndPlanId(userId, planId)) {
+            return;
+        }
+
         // 1. 현재 저축 금액 조회
         int currentSavings = accountService.getUserBalance(userId);
 
@@ -440,14 +445,15 @@ public class TripPlanService {
         // 5. GPT 호출
         SavingsTipResponseDTO response = chatClient
                 .prompt()
-                .system("너는 저축 조언 전문가야. 사용자의 소비 내역을 분석해서 맞춤형 저축 팁을 알려줘. \\\n" +
+                .system("너는 저축 조언 전문가야. " +
+                        "사용자의 소비 내역을 분석해서 반드시 3개의 맞춤형 저축 팁을 작성해줘. \\\n" +
                         "반드시 예시를 참고하여 구어체를 사용하여 답변해.")
                 .user(promptText)
                 .call()
                 .entity(SavingsTipResponseDTO.class);
 
         // 6. TripMember 조회 후 DB 저장
-        TripMember tripMember = tripMemberRepository.findByUserId(userId)
+        TripMember tripMember = tripMemberRepository.findByUserIdAndPlanId(userId, planId)
                 .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
         for (String tip : response.getMessages()) {
@@ -456,24 +462,27 @@ public class TripPlanService {
         }
     }
 
-    @Transactional
-    public void checkSavingTip(Long userId, Long planId) {
+    @Transactional(readOnly = true)
+    public boolean checkSavingTip(Long userId, Long planId) {
 
-        // 1. 플랜 참여 여부 확인
-        boolean checkPlan = tripMemberRepository.existsByUser_UserId(userId);
+        // 1. 기존 저축팁이 존재 하는지 확인
+        if (tripSavingPhraseRepository.existsByUserIdAndPlanId(userId, planId)) {
+            return false;
+        }
 
-        // 2. 계좌 확인
+        // 2. 플랜 참여 여부 확인
+        boolean checkPlan = tripMemberRepository.existsMemberByUserAndPlan(userId, planId);
+
+        // 3. 계좌 확인
         boolean checkAccount = accountRepository.findByUserIdAndTripPlanId(userId, planId).isPresent();
 
-        // 3. 카드 확인
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
-        boolean checkCard = user.isCardConnected();
+        // 4. 카드 확인
+        boolean checkCard = userRepository.findByUserId(userId)
+                .map(User::isCardConnected)
+                .orElse(false);
 
-        // 4. 세 조건이 모두 true일 때만 실행
-        if (checkPlan && checkAccount && checkCard) {
-            addSavingsTip(userId, planId);
-        }
+        // 5. 세 조건이 모두 true일 때만 실행
+        return checkPlan && checkAccount && checkCard;
     }
 }
 
