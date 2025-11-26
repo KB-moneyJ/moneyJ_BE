@@ -257,6 +257,11 @@ public class TripPlanService {
 
     @Transactional(readOnly = true)
     public List<UserBalanceResponseDTO> getUserBalances(Long tripPlanId) {
+
+        // 요청된 플랜이 실제 존재하는지 확인
+        tripPlanRepository.findById(tripPlanId)
+                .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
+
         List<Account> accounts = accountRepository.findByTripPlanId(tripPlanId);
 
         return accounts.stream()
