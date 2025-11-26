@@ -2,20 +2,29 @@ package com.project.moneyj.account.domain;
 
 import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.user.domain.User;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 @Data
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "account")
+@Table(
+        name = "account",
+        uniqueConstraints = {
+                // [중요] 계좌번호는 여행지랑 묶지 말고 "혼자" 유니크해야 합니다.
+                // 그래야 "어떤 여행이든 상관없이 이 계좌는 딱 한 번만 사용됨"이 보장됩니다.
+                @UniqueConstraint(
+                        name = "uk_account_number",
+                        columnNames = {"account_number"}
+                ),
+
+                // 이건 "한 유저가 한 여행에서 두 번 등록하는 것"을 막기 위한 용도입니다.
+                @UniqueConstraint(
+                        name = "uk_account_plan_user",
+                        columnNames = {"trip_plan_id", "user_id"}
+                )
+        }
+)
 public class Account {
 
     @Id
@@ -30,6 +39,7 @@ public class Account {
     @JoinColumn(name = "trip_plan_id")
     private TripPlan tripPlan;
 
+    @Column(name = "account_number")
     private String accountNumber;
 
     private String accountNumberMasked;
