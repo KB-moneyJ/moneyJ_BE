@@ -74,7 +74,7 @@ public class CodefCredentialService {
         // 4. 공통 응답 처리 메서드를 통해 응답 파싱 및 성공 여부 검증
         Map<String, Object> responseMap = parseCodefResponse(rawResponse);
 
-        // 5. ★★★ 성공 결과를 DB에 저장/업데이트 (Upsert) ★★★
+        // 5. 성공 결과를 DB에 저장/업데이트
         List<Map<String, Object>> successList = (List<Map<String, Object>>) ((Map<String, Object>) responseMap.get("data")).get("successList");
 
         if (successList != null && !successList.isEmpty()) {
