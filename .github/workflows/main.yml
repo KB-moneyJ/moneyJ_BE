@@ -1,3 +1,4 @@
+# .github/workflows/moneyj-ci-cd.yml
 name: Java CI/CD with Gradle
 
 on:
@@ -9,22 +10,38 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1) 레포 코드 가져오기
       - name: Checkout
         uses: actions/checkout@v4
 
+      # 2) JDK 17 설정
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           java-version: '17'
           distribution: 'temurin'
 
+      # 3) gradlew 실행 권한 부여
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
+      # 4) Gradle 빌드
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
-      # ✅ build/libs -> /home/ubuntu/moneyj/build/libs 로 복사
+      # 5) EC2에 빌드 결과 들어갈 디렉토리 미리 생성
+      - name: Prepare dirs on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AWS_EC2_HOST }}
+          username: ${{ secrets.AWS_EC2_USERNAME }}
+          key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            mkdir -p /home/ubuntu/moneyj/build/libs
+
+      # 6) build/libs/*.jar -> /home/ubuntu/moneyj/build/libs 로 복사
+      #    strip_components: 2 = build/libs/ 앞부분 잘라내고 파일만 target에 떨어뜨림
       - name: Deploy JAR to EC2
         uses: appleboy/scp-action@master
         with:
@@ -32,9 +49,11 @@ jobs:
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
           port: 22
-          source: "./build/libs/*.jar"
+          source: "build/libs/*.jar"
           target: "/home/ubuntu/moneyj/build/libs"
+          strip_components: 2
 
+      # 7) EC2에서 deploy.sh 실행 (여기서 docker-compose up -d 등 처리)
       - name: Execute deployment script on EC2
         uses: appleboy/ssh-action@master
         with:
