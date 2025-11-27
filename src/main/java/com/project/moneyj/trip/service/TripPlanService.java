@@ -462,27 +462,33 @@ public class TripPlanService {
         }
     }
 
-    @Transactional(readOnly = true)
-    public boolean checkSavingTip(Long userId, Long planId) {
+    @Transactional
+    public void checkSavingTip(Long userId, Long planId) {
 
-        // 1. 기존 저축팁이 존재 하는지 확인
+        // 1. 기존 저축 팁 존재 여부 확인
         if (tripSavingPhraseRepository.existsByUserIdAndPlanId(userId, planId)) {
-            return false;
+            return;
         }
 
         // 2. 플랜 참여 여부 확인
-        boolean checkPlan = tripMemberRepository.existsMemberByUserAndPlan(userId, planId);
+        if (!tripMemberRepository.existsMemberByUserAndPlan(userId, planId)) {
+            return;
+        }
 
         // 3. 계좌 확인
-        boolean checkAccount = accountRepository.findByUserIdAndTripPlanId(userId, planId).isPresent();
+       if (!accountRepository.findByUserIdAndTripPlanId(userId, planId).isPresent()){
+           return;
+       }
 
         // 4. 카드 확인
-        boolean checkCard = userRepository.findByUserId(userId)
+        if (!userRepository.findByUserId(userId)
                 .map(User::isCardConnected)
-                .orElse(false);
+                .orElse(false)){
+            return;
+        }
 
-        // 5. 세 조건이 모두 true일 때만 실행
-        return checkPlan && checkAccount && checkCard;
+        // 5. 네 조건이 모두 true일 때만 실행
+        addSavingsTip(userId, planId);
     }
 }
 
