@@ -33,7 +33,7 @@ jobs:
           key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
           port: 22
           source: "./build/libs/*.jar"
-          target: "/home/ubuntu/moneyj/build/libs"
+          target: "/home/ubuntu/moneyj"
 
       - name: Execute deployment script on EC2
         uses: appleboy/ssh-action@master
