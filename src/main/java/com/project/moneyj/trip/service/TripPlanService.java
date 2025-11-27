@@ -139,10 +139,6 @@ public class TripPlanService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 여행 멤버: " + user.getEmail()));
         ;
 
-        // Category 가 한 개도 없는 경우
-        if (tripMember.getCategoryList().isEmpty()) {
-            throw MoneyjException.of(CategoryErrorCode.NOT_FOUND);
-        }
 
         // 문구 조회
         // 저축 플랜 문구
@@ -155,7 +151,8 @@ public class TripPlanService {
 
         // 카테고리 조회 및 DTO 변환
         List<Category> categoryList = tripMember.getCategoryList();
-        List<CategoryDTO> categoryDTOList = categoryList.stream()
+
+        List<CategoryDTO> categoryDTOList = categoryList.isEmpty() ? new ArrayList<>() : categoryList.stream()
                 .map(category -> CategoryDTO.fromEntity(category, planId))
                 .toList();
 
@@ -389,9 +386,6 @@ public class TripPlanService {
     @Transactional
     public void addSavingsTip(Long userId, Long planId) {
 
-        //트랜잭션 잠금
-        TripMember member = tripMemberRepository.findMemberForUpdate(userId, planId);
-
         if (tripSavingPhraseRepository.existsByUserIdAndPlanId(userId, planId)) {
             return;
         }
@@ -464,6 +458,9 @@ public class TripPlanService {
 
     @Transactional
     public void checkSavingTip(Long userId, Long planId) {
+
+        //트랜잭션 잠금
+        TripMember member = tripMemberRepository.findMemberForUpdate(userId, planId);
 
         // 1. 기존 저축 팁 존재 여부 확인
         if (tripSavingPhraseRepository.existsByUserIdAndPlanId(userId, planId)) {
