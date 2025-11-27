@@ -24,6 +24,18 @@ jobs:
       - name: Build with Gradle
         run: ./gradlew clean build -x test
 
+      # (선택) 폴더 미리 생성
+      - name: Prepare dirs on EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ secrets.AWS_EC2_HOST }}
+          username: ${{ secrets.AWS_EC2_USERNAME }}
+          key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
+          port: 22
+          script: |
+            mkdir -p /home/ubuntu/moneyj/build/libs
+
+      # ✅ build/libs -> /home/ubuntu/moneyj/build/libs 로 복사
       - name: Deploy JAR to EC2
         uses: appleboy/scp-action@master
         with:
@@ -31,8 +43,8 @@ jobs:
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
           port: 22
-          source: "./build/libs/*.jar"          # -> EC2: /home/ubuntu/moneyj/build/libs/*.jar
-          target: "/home/ubuntu/moneyj"
+          source: "./build/libs/*.jar"
+          target: "/home/ubuntu/moneyj/build/libs"
 
       - name: Execute deployment script on EC2
         uses: appleboy/ssh-action@master
