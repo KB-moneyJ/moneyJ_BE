@@ -54,10 +54,7 @@ public class TripController implements TripControllerApiSpec{
             @PathVariable Long planId,
             @AuthenticationPrincipal CustomOAuth2User customUser) {
         Long userId = customUser.getUserId();
-        boolean tipExists = tripPlanService.checkSavingTip(userId, planId);
-        if (tipExists) {
-            tripPlanService.addSavingsTip(userId, planId);
-        }
+        tripPlanService.checkSavingTip(userId, planId);
         return ResponseEntity.ok(tripPlanService.getTripPlanDetail(planId, userId));
     }
 
