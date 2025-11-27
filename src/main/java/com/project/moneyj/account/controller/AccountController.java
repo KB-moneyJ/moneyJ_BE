@@ -30,4 +30,9 @@ public class AccountController implements AccountControllerApiSpec{
         AccountLinkResponseDTO responseDto = accountService.linkUserAccount(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
+
+    @GetMapping("/check/{accountNumber}")
+    public boolean checkAccountOwnership(@PathVariable String accountNumber) {
+        return accountService.checkAccountOwnership(accountNumber);
+    }
 }
