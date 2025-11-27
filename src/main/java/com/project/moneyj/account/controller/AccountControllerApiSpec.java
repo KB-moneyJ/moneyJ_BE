@@ -4,6 +4,7 @@ import com.project.moneyj.account.dto.AccountLinkRequestDTO;
 import com.project.moneyj.account.dto.AccountLinkResponseDTO;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,5 +23,19 @@ public interface AccountControllerApiSpec {
     ResponseEntity<AccountLinkResponseDTO> linkAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody AccountLinkRequestDTO request
+    );
+
+    @Operation(
+            summary = "계좌번호 저장 여부 검사",
+            description = "해당 계좌번호가 현재 사용자에게 이미 저장(등록)되어 있는지 여부를 반환합니다."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "정상적으로 계좌 사용 여부를 반환함"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청(계좌번호 형식 오류 등)"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    boolean checkAccountOwnership(
+            @Parameter(description = "조회할 계좌번호", required = true, example = "123-456-789012")
+            @PathVariable String accountNumber
     );
 }
