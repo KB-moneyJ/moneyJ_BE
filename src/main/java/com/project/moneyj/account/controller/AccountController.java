@@ -31,6 +31,9 @@ public class AccountController implements AccountControllerApiSpec{
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
+    /**
+     * 계좌번호 저장 여부 검사
+     */
     @GetMapping("/check/{accountNumber}")
     public boolean checkAccountOwnership(@PathVariable String accountNumber) {
         return accountService.checkAccountOwnership(accountNumber);

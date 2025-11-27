@@ -158,6 +158,7 @@ public class AccountService {
                 .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
     }
 
+    @Transactional(readOnly = true)
     public boolean checkAccountOwnership(String accountNumber) {
 
         return accountRepository.findByAccountNumber(accountNumber).isPresent();
