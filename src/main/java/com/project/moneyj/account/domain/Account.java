@@ -2,14 +2,7 @@ package com.project.moneyj.account.domain;
 
 import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.user.domain.User;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.Duration;
@@ -18,7 +11,20 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "account")
+@Table(
+        name = "account",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_account_number",
+                        columnNames = {"account_number"}
+                ),
+
+                @UniqueConstraint(
+                        name = "uk_account_plan_user",
+                        columnNames = {"trip_plan_id", "user_id"}
+                )
+        }
+)
 public class Account {
 
     @Id
@@ -33,6 +39,7 @@ public class Account {
     @JoinColumn(name = "trip_plan_id")
     private TripPlan tripPlan;
 
+    @Column(name = "account_number")
     private String accountNumber;
 
     private String accountNumberMasked;

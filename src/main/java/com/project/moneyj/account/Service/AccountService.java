@@ -16,6 +16,7 @@ import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -96,6 +97,16 @@ public class AccountService {
         String targetAccountNumber = request.getAccountNumber();
         Map<String, Object> selectedAccountData = findAccountInList(accountList, targetAccountNumber);
 
+        // 저장 전에 동일한 계좌번호가 이미 다른 플랜에서 사용중인지 검사
+        Optional<Account> existingByNumber = accountRepository.findByAccountNumber(targetAccountNumber);
+        if (existingByNumber.isPresent()) {
+            Account found = existingByNumber.get();
+            // 만약 기존 Account가 있을 때, 동일한 레코드를 업데이트하는 경우는 허용
+            if (accountOpt.isEmpty() || !found.getAccountId().equals(accountOpt.get().getAccountId())) {
+                throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
+            }
+        }
+
         User user = userRepository.findByUserId(userId).orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
         TripPlan tripPlan = tripPlanRepository.findById(request.getTripPlanId()).orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
 
@@ -112,7 +123,13 @@ public class AccountService {
                         request.getOrganizationCode(),
                         (String) selectedAccountData.get("resAccountName")));
 
-        return accountRepository.save(account);
+        try {
+            return accountRepository.save(account);
+        } catch (DataIntegrityViolationException e) {
+            // 유니크 제약 위반
+            log.warn("계좌 저장 중 데이터 무결성 오류 발생: accountNumber={}, userId={}, tripPlanId={}", targetAccountNumber, userId, request.getTripPlanId());
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
+        }
     }
 
     // 계좌 목록에서 특정 계좌번호를 찾는 헬퍼 메서드
@@ -139,5 +156,11 @@ public class AccountService {
         return accountRepository.findByUser_UserId(userId)
                 .map(Account::getBalance)
                 .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+    }
+
+    @Transactional(readOnly = true)
+    public boolean checkAccountOwnership(String accountNumber) {
+
+        return accountRepository.findByAccountNumber(accountNumber).isPresent();
     }
 }

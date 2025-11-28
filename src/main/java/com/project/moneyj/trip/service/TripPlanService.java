@@ -291,6 +291,11 @@ public class TripPlanService {
     @Transactional(readOnly = false) // 내부에서 balance 갱신하니 write 허용
     public List<UserBalanceResponseDTO> getUserBalances(Long tripPlanId) {
 
+
+        // 요청된 플랜이 실제 존재하는지 확인
+        tripPlanRepository.findById(tripPlanId)
+                .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
+
         List<Account> accounts = accountRepository.findByTripPlanId(tripPlanId);
 
         // userId + orgCode 기준으로 CODEF 응답 캐싱 (한 유저/기관당 한 번만 호출하려고)
