@@ -62,13 +62,19 @@ jobs:
         uses: appleboy/ssh-action@master
         id: deploy-prod
         with:
-          # 여기서 'secrets.' 접두사가 누락되어 오류 발생
-          host: ${{ secrets.AWS_EC2_HOST }} 
+          host: ${{ secrets.AWS_EC2_HOST }}
           username: ${{ secrets.AWS_EC2_USERNAME }}
           key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
-          # envs: GITHUB_SHA 는 appleboy/ssh-action의 with: 블록에 부적절하여 삭제
           script: |
-            sudo docker ps
+            sudo docker stop ubuntu-app-1 || true
+            sudo docker rm ubuntu-app-1 || true
+
             sudo docker pull ${{ secrets.DOCKER_USERNAME }}/docker-test-prod
-            sudo docker run -d -p 8082:8082 ${{ secrets.DOCKER_USERNAME }}/docker-test-prod
+
+            sudo docker run -d \
+              --name ubuntu-app-1 \
+              -p 8082:8080 \
+              ${{ secrets.DOCKER_USERNAME }}/docker-test-prod \
+              --spring.profiles.active=prod
+
             sudo docker image prune -f
