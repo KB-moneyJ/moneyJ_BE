@@ -14,12 +14,11 @@ import org.springframework.stereotype.Repository;
 public interface AccountRepository extends JpaRepository<Account, Long> {
 
     @Query("""
-      select a
-      from Account a
-      join fetch a.user u
-      join fetch a.tripPlan tp
-      where tp.tripPlanId = :tripPlanId
-      order by a.balance desc
+      SELECT DISTINCT a
+      FROM Account a
+      JOIN FETCH a.user u
+      WHERE a.tripPlan.tripPlanId = :tripPlanId
+      ORDER BY a.balance DESC
     """)
     List<Account> findByTripPlanId(@Param("tripPlanId") Long tripPlanId);
 
@@ -31,4 +30,5 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
     Optional<Account> findByUserIdAndTripPlanId(@Param("userId") Long userId,
                                                 @Param("tripPlanId") Long tripPlanId);
 
+    Optional<Account> findByAccountNumber(String accountNumber);
 }

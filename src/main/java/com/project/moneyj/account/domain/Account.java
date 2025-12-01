@@ -2,20 +2,29 @@ package com.project.moneyj.account.domain;
 
 import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.user.domain.User;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.*;
 
-@Data
+import java.time.Duration;
+import java.time.LocalDateTime;
+
 @Entity
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(name = "account")
+@Table(
+        name = "account",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        name = "uk_account_number",
+                        columnNames = {"account_number"}
+                ),
+
+                @UniqueConstraint(
+                        name = "uk_account_plan_user",
+                        columnNames = {"trip_plan_id", "user_id"}
+                )
+        }
+)
 public class Account {
 
     @Id
@@ -30,6 +39,7 @@ public class Account {
     @JoinColumn(name = "trip_plan_id")
     private TripPlan tripPlan;
 
+    @Column(name = "account_number")
     private String accountNumber;
 
     private String accountNumberMasked;
@@ -40,6 +50,8 @@ public class Account {
 
     private String accountName;
 
+    private LocalDateTime lastUpdateAt;
+
     // === 기본 생성자 (내부용) ===
     @Builder(access = AccessLevel.PRIVATE)
     private Account(User user,
@@ -48,7 +60,8 @@ public class Account {
                     String accountNumberMasked,
                     Integer balance,
                     String organizationCode,
-                    String accountName) {
+                    String accountName,
+                    LocalDateTime lastUpdateAt) {
 
         this.user = user;
         this.tripPlan = tripPlan;
@@ -57,6 +70,7 @@ public class Account {
         this.balance = balance;
         this.organizationCode = organizationCode;
         this.accountName = accountName;
+        this.lastUpdateAt = lastUpdateAt;
     }
 
     // === 정적 팩토리 메서드 ===
@@ -76,12 +90,18 @@ public class Account {
                 .balance(balance)
                 .organizationCode(organizationCode)
                 .accountName(accountName)
+                .lastUpdateAt(LocalDateTime.now())
                 .build();
     }
 
     // === 비즈니스 로직 ===
     public void updateBalance(Integer balance) {
         this.balance = balance;
+        this.lastUpdateAt = LocalDateTime.now();
+    }
+
+    public boolean isStale(Duration threshold){
+        return lastUpdateAt == null || lastUpdateAt.isBefore(LocalDateTime.now().minus(threshold));
     }
 
 }

@@ -3,7 +3,9 @@ package com.project.moneyj.trip.repository;
 import com.project.moneyj.trip.domain.TripMember;
 import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.user.domain.User;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -21,8 +23,26 @@ public interface TripMemberRepository extends JpaRepository<TripMember, Long> {
     Optional<TripMember> findByTripPlanAndUser(TripPlan tripPlan, User user);
 
 
-    @Query("SELECT tm FROM TripMember tm WHERE tm.user.userId = :userId")
-    Optional<TripMember> findByUserId(@Param("userId") Long userId);
+    @Query("SELECT tm FROM TripMember tm WHERE tm.user.userId = :userId and tm.tripPlan.tripPlanId = :planId")
+    Optional<TripMember> findByUserIdAndPlanId(@Param("userId") Long userId, @Param("planId") Long planId);
 
-    boolean existsByUser_UserId(Long userId);
+    @Query("""
+    select (count(tm) > 0)
+    from TripMember tm
+    where tm.user.userId = :userId
+      and tm.tripPlan.tripPlanId = :planId
+    """)
+    boolean existsMemberByUserAndPlan(@Param("userId") Long userId, @Param("planId") Long planId);
+
+
+    //트랜잭션 잠금
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+    select tm
+    from TripMember tm
+    where tm.user.userId = :userId
+      and tm.tripPlan.tripPlanId = :planId
+    """)
+    TripMember findMemberForUpdate(Long userId, Long planId);
+
 }

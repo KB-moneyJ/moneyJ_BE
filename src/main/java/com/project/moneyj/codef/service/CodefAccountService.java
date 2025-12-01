@@ -42,7 +42,6 @@ public class CodefAccountService {
     private final CodefInstitutionRepository codefInstitutionRepository;
     private final CodefConnectedIdRepository connectedIdRepository;
     private final ObjectMapper objectMapper;
-    private final CodefConnectedIdRepository codefConnectedIdRepository;
 
     /**
      * 최초 계정 등록 → Connected ID 발급
@@ -130,6 +129,7 @@ public class CodefAccountService {
 
         // 4) DB 저장
         connectedIdRepository.save(CodefConnectedId.of(userId, connectedId, "ACTIVE"));
+        connectedIdRepository.flush();
 
         Map<String, Object> responseMap = parseCodefResponse(rawResponseBody);
         List<Map<String, Object>> successList = (List<Map<String, Object>>) ((Map<String, Object>) responseMap.get("data")).get("successList");
@@ -154,7 +154,7 @@ public class CodefAccountService {
         String loginIdMasked = (String) successInfo.get("id");
 
         Optional<CodefInstitution> existingOpt = codefInstitutionRepository.findByConnectedIdAndOrganization(connectedId, organization);
-        CodefConnectedId codefConnectedId = codefConnectedIdRepository.findCodefConnectedIdByConnectedId(connectedId)
+        CodefConnectedId codefConnectedId = connectedIdRepository.findCodefConnectedIdByConnectedId(connectedId)
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
 
         if (existingOpt.isPresent()) {

@@ -4,11 +4,9 @@ package com.project.moneyj.trip.service;
 import com.project.moneyj.account.Service.AccountService;
 import com.project.moneyj.analysis.dto.MonthlySummaryDTO;
 import com.project.moneyj.analysis.service.TransactionSummaryService;
+import com.project.moneyj.codef.service.CodefBankService;
 import com.project.moneyj.exception.MoneyjException;
-import com.project.moneyj.exception.code.CategoryErrorCode;
-import com.project.moneyj.exception.code.TripMemberErrorCode;
-import com.project.moneyj.exception.code.TripPlanErrorCode;
-import com.project.moneyj.exception.code.UserErrorCode;
+import com.project.moneyj.exception.code.*;
 import com.project.moneyj.openai.util.PromptLoader;
 import com.project.moneyj.trip.domain.*;
 import com.project.moneyj.trip.dto.*;
@@ -33,11 +31,9 @@ import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Duration;
 import java.time.YearMonth;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import lombok.RequiredArgsConstructor;
@@ -51,16 +47,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TripPlanService {
 
+    private static final Duration STALE_THRESHOLD = Duration.ofHours(3);
+
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+
     private final TripPlanRepository tripPlanRepository;
     private final TripMemberRepository tripMemberRepository;
     private final TripTipRepository tripTipRepository;
     private final TripSavingPhraseRepository tripSavingPhraseRepository;
-    private final AccountRepository accountRepository;
+
     private final ChatClient chatClient;
+    private final AccountRepository accountRepository;
     private final AccountService accountService;
     private final TransactionSummaryService transactionSummaryService;
+    private final CodefBankService codefBankService;
 
     /**
      * 여행 플랜 생성
@@ -142,10 +143,6 @@ public class TripPlanService {
                 .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 여행 멤버: " + user.getEmail()));
         ;
 
-        // Category 가 한 개도 없는 경우
-        if (tripMember.getCategoryList().isEmpty()) {
-            throw MoneyjException.of(CategoryErrorCode.NOT_FOUND);
-        }
 
         // 문구 조회
         // 저축 플랜 문구
@@ -158,7 +155,8 @@ public class TripPlanService {
 
         // 카테고리 조회 및 DTO 변환
         List<Category> categoryList = tripMember.getCategoryList();
-        List<CategoryDTO> categoryDTOList = categoryList.stream()
+
+        List<CategoryDTO> categoryDTOList = categoryList.isEmpty() ? new ArrayList<>() : categoryList.stream()
                 .map(category -> CategoryDTO.fromEntity(category, planId))
                 .toList();
 
@@ -255,31 +253,122 @@ public class TripPlanService {
         return new TripPlanResponseDTO(planId, "해당 플랜을 삭제하였습니다.");
     }
 
-    @Transactional(readOnly = true)
+//    @Transactional(readOnly = true)
+//    public List<UserBalanceResponseDTO> getUserBalances(Long tripPlanId) {
+//        List<Account> accounts = accountRepository.findByTripPlanId(tripPlanId);
+//
+//        return accounts.stream()
+//                .map(a -> {
+//                    double rawProgress = 0.0;
+//                    TripPlan tp = a.getTripPlan();
+//                    if (tp != null && tp.getTotalBudget() != null && tp.getTotalBudget() > 0) {
+//                        rawProgress = (a.getBalance() * 100.0) / tp.getTotalBudget();
+//                    }
+//                    // 소수점 1자리로 반올림
+//                    double progress = new BigDecimal(rawProgress)
+//                            .setScale(1, RoundingMode.HALF_UP)
+//                            .doubleValue();
+//
+//                    return new UserBalanceResponseDTO(
+//                            a.getUser().getUserId(),
+//                            a.getUser().getNickname(),
+//                            a.getUser().getProfileImage(),
+//                            a.getBalance(),
+//                            progress
+//                    );
+//                })
+//                .toList();
+//    }
+
+    /**
+     * 여행 멤버별 저축 금액 조회 및 업데이트
+     * 마지막 동기화 < 3시간 -> DB에서 바로 금액 반환
+     * 마지막 동기화 >= 3시간: CODEF 비동기(syncAccountIfNeeded) 호출
+     */
+    @Transactional(readOnly = false) // 내부에서 balance 갱신하니 write 허용
     public List<UserBalanceResponseDTO> getUserBalances(Long tripPlanId) {
+
+
+        // 요청된 플랜이 실제 존재하는지 확인
+        tripPlanRepository.findById(tripPlanId)
+                .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
+
         List<Account> accounts = accountRepository.findByTripPlanId(tripPlanId);
 
+        // userId + orgCode 기준으로 CODEF 응답 캐싱 (한 유저/기관당 한 번만 호출하려고)
+        Map<String, List<Map<String, Object>>> codefCache = new HashMap<>();
+
         return accounts.stream()
-                .map(a -> {
-                    double rawProgress = 0.0;
-                    TripPlan tp = a.getTripPlan();
-                    if (tp != null && tp.getTotalBudget() != null && tp.getTotalBudget() > 0) {
-                        rawProgress = (a.getBalance() * 100.0) / tp.getTotalBudget();
+                .map(account -> {
+                    // 1) 필요하면 CODEF 호출해서 해당 계좌 잔액 갱신
+                    if (account.isStale(STALE_THRESHOLD)) {
+                        syncAccountIfNeeded(account, codefCache);
                     }
-                    // 소수점 1자리로 반올림
-                    double progress = new BigDecimal(rawProgress)
+
+                    // 2) 갱신된(또는 기존) 스냅샷으로 달성률 계산
+                    TripPlan tp = account.getTripPlan();
+                    int balance = Optional.ofNullable(account.getBalance()).orElse(0);
+                    double rawProgress = 0.0;
+
+                    if (tp != null && tp.getTotalBudget() != null && tp.getTotalBudget() > 0) {
+                        rawProgress = (balance * 100.0) / tp.getTotalBudget();
+                    }
+
+                    double progress = BigDecimal.valueOf(rawProgress)
                             .setScale(1, RoundingMode.HALF_UP)
                             .doubleValue();
 
                     return new UserBalanceResponseDTO(
-                            a.getUser().getUserId(),
-                            a.getUser().getNickname(),
-                            a.getUser().getProfileImage(),
-                            a.getBalance(),
+                            account.getUser().getUserId(),
+                            account.getUser().getNickname(),
+                            account.getUser().getProfileImage(),
+                            balance,
                             progress
                     );
                 })
                 .toList();
+    }
+
+    /**
+     * 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
+     */
+    private void syncAccountIfNeeded(Account account,
+                                     Map<String, List<Map<String, Object>>> codefCache) {
+
+        Long userId = account.getUser().getUserId();
+        String orgCode = account.getOrganizationCode();
+        String accountNumber = account.getAccountNumber();
+
+        if (orgCode == null || accountNumber == null) {
+            return;
+        }
+
+        String cacheKey = userId + "|" + orgCode;
+
+        // 1. 캐시에서 조회하거나, 없으면 CODEF 호출
+        List<Map<String, Object>> accountsFromCodef =
+                codefCache.computeIfAbsent(cacheKey, key -> {
+                    Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
+                    Map<String, Object> data = (Map<String, Object>) res.get("data");
+
+                    if (data == null || data.get("resDepositTrust") == null) {
+                        return Collections.emptyList();
+                    }
+                    return (List<Map<String, Object>>) data.get("resDepositTrust");
+                });
+
+        if (accountsFromCodef.isEmpty()) {
+            return; // CODEF 쪽 문제거나 계좌 없음 → 기존 스냅샷 유지
+        }
+
+        // 2. 현재 Account와 매칭되는 CODEF 계좌 찾기
+        accountsFromCodef.stream()
+                .filter(m -> accountNumber.equals(String.valueOf(m.get("resAccount"))))
+                .findFirst()
+                .ifPresent(map -> {
+                    Integer latestBalance = Integer.parseInt(String.valueOf(map.get("resAccountBalance")));
+                    account.updateBalance(latestBalance); // 스냅샷 갱신
+                });
     }
 
     /**
@@ -391,6 +480,11 @@ public class TripPlanService {
      */
     @Transactional
     public void addSavingsTip(Long userId, Long planId) {
+
+        if (tripSavingPhraseRepository.existsByUserIdAndPlanId(userId, planId)) {
+            return;
+        }
+
         // 1. 현재 저축 금액 조회
         int currentSavings = accountService.getUserBalance(userId);
 
@@ -440,14 +534,15 @@ public class TripPlanService {
         // 5. GPT 호출
         SavingsTipResponseDTO response = chatClient
                 .prompt()
-                .system("너는 저축 조언 전문가야. 사용자의 소비 내역을 분석해서 맞춤형 저축 팁을 알려줘. \\\n" +
+                .system("너는 저축 조언 전문가야. " +
+                        "사용자의 소비 내역을 분석해서 반드시 3개의 맞춤형 저축 팁을 작성해줘. \\\n" +
                         "반드시 예시를 참고하여 구어체를 사용하여 답변해.")
                 .user(promptText)
                 .call()
                 .entity(SavingsTipResponseDTO.class);
 
         // 6. TripMember 조회 후 DB 저장
-        TripMember tripMember = tripMemberRepository.findByUserId(userId)
+        TripMember tripMember = tripMemberRepository.findByUserIdAndPlanId(userId, planId)
                 .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
         for (String tip : response.getMessages()) {
@@ -459,21 +554,33 @@ public class TripPlanService {
     @Transactional
     public void checkSavingTip(Long userId, Long planId) {
 
-        // 1. 플랜 참여 여부 확인
-        boolean checkPlan = tripMemberRepository.existsByUser_UserId(userId);
+        //트랜잭션 잠금
+        TripMember member = tripMemberRepository.findMemberForUpdate(userId, planId);
 
-        // 2. 계좌 확인
-        boolean checkAccount = accountRepository.findByUserIdAndTripPlanId(userId, planId).isPresent();
-
-        // 3. 카드 확인
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
-        boolean checkCard = user.isCardConnected();
-
-        // 4. 세 조건이 모두 true일 때만 실행
-        if (checkPlan && checkAccount && checkCard) {
-            addSavingsTip(userId, planId);
+        // 1. 기존 저축 팁 존재 여부 확인
+        if (tripSavingPhraseRepository.existsByUserIdAndPlanId(userId, planId)) {
+            return;
         }
+
+        // 2. 플랜 참여 여부 확인
+        if (!tripMemberRepository.existsMemberByUserAndPlan(userId, planId)) {
+            return;
+        }
+
+        // 3. 계좌 확인
+       if (!accountRepository.findByUserIdAndTripPlanId(userId, planId).isPresent()){
+           return;
+       }
+
+        // 4. 카드 확인
+        if (!userRepository.findByUserId(userId)
+                .map(User::isCardConnected)
+                .orElse(false)){
+            return;
+        }
+
+        // 5. 네 조건이 모두 true일 때만 실행
+        addSavingsTip(userId, planId);
     }
 }
 
