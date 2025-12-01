@@ -41,7 +41,11 @@ jobs:
           touch ./application-prod.yml
           echo "${{ secrets.YML_PROD }}" > ./application-prod.yml
         shell: bash
-
+			
+			# gradlew 실행 권한 부여
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+        
       # gradle build
       - name: Build with Gradle
         run: ./gradlew build -x test
@@ -59,9 +63,9 @@ jobs:
         uses: appleboy/ssh-action@master
         id: deploy-prod
         with:
-          host: ${{ secrets.AWS_EC2_HOST }} # EC2 퍼블릭 IPv4 DNS
-          username: ${{ secrets.AWS_EC2_USERNAME }}
-          key: ${{ secrets.AWS_EC2_SSH_PRIVATE_KEY }}
+          host: ${{ AWS_EC2_HOST }} # EC2 퍼블릭 IPv4 DNS
+          username: ${{ AWS_EC2_USERNAME }}
+          key: ${{ AWS_EC2_SSH_PRIVATE_KEY }}
           envs: GITHUB_SHA
           script: |
             sudo docker ps
