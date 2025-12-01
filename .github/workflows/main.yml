@@ -73,7 +73,7 @@ jobs:
 
             sudo docker run -d \
               --name ubuntu-app-1 \
-              -p 8082:8080 \
+              -p 8080:8080 \
               ${{ secrets.DOCKER_USERNAME }}/docker-test-prod \
               --spring.profiles.active=prod
 
