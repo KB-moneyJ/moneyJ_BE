@@ -14,16 +14,14 @@ import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.trip.repository.TripPlanRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -86,6 +84,7 @@ public class AccountService {
 
         // 4. 최종 결과를 DTO로 만들어 반환합니다.
         return AccountLinkResponseDTO.builder()
+                .accountId(finalAccount.getAccountId())
                 .accountName(finalAccount.getAccountName())
                 .accountNumberDisplay(maskAdvanced(finalAccount.getAccountNumber()))
                 .balance(finalAccount.getBalance())
@@ -151,16 +150,24 @@ public class AccountService {
         String lastPart = accountNumber.substring(accountNumber.length() - 4);
         return firstPart + "****" + lastPart;
     }
+
     @Transactional(readOnly = true)
     public Integer getUserBalance(Long userId) {
         return accountRepository.findByUser_UserId(userId)
                 .map(Account::getBalance)
-                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
     public boolean checkAccountOwnership(String accountNumber) {
-
         return accountRepository.findByAccountNumber(accountNumber).isPresent();
+    }
+
+    @Transactional
+    public void deleteAccount(Long accountId) {
+        Account account = accountRepository.findById(accountId)
+            .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
+
+        accountRepository.delete(account);
     }
 }
