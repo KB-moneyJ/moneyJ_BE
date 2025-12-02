@@ -155,7 +155,7 @@ public class AccountService {
     public Integer getUserBalance(Long userId) {
         return accountRepository.findByUser_UserId(userId)
                 .map(Account::getBalance)
-                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.USER_ACCOUNT_NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
