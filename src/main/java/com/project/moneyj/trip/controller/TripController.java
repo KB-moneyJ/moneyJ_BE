@@ -103,8 +103,11 @@ public class TripController implements TripControllerApiSpec{
      * 마지막 동기화 >= 3시간: CODEF 비동기 호출
      */
     @GetMapping("/{tripPlanId}/balances")
-    public List<UserBalanceResponseDTO> getBalances(@PathVariable Long tripPlanId) {
-        return tripPlanService.getUserBalances(tripPlanId);
+    public ResponseEntity<UserBalanceResponseDTO> getBalances(@AuthenticationPrincipal CustomOAuth2User customUser,
+                                                              @PathVariable Long tripPlanId) {
+        Long userId = customUser.getUserId();
+        UserBalanceResponseDTO response = tripPlanService.getUserBalances(userId, tripPlanId);
+        return ResponseEntity.ok(response);
     }
 
     /**
