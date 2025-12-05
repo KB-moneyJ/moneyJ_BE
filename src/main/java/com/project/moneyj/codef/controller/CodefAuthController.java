@@ -24,6 +24,7 @@ public class CodefAuthController implements CodefAuthControllerApiSpec{
     /**
      * 토큰 발급
      */
+    @Override
     @GetMapping("/token")
     public ResponseEntity<?> getToken() {
         String token = codefAuthService.getValidAccessToken();
@@ -34,6 +35,7 @@ public class CodefAuthController implements CodefAuthControllerApiSpec{
     /**
      * 커넥티드 ID 발급
      */
+    @Override
     @PostMapping("/connected-id")
     public ResponseEntity<?> createConnectedId(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -57,6 +59,7 @@ public class CodefAuthController implements CodefAuthControllerApiSpec{
      * 계정 추가
      * 은행사/카드사의 아이디, 패스워드를 통한 계정 추가
      */
+    @Override
     @PostMapping("/credentials")
     public ResponseEntity<?> addCredential(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -70,6 +73,7 @@ public class CodefAuthController implements CodefAuthControllerApiSpec{
      * 계정 목록 조회
      * 등록한 계정(은행사/카드사) 목록
      */
+    @Override
     @GetMapping("/credentials")
     public ResponseEntity<?> listCredentials(
             @AuthenticationPrincipal CustomOAuth2User customUser) {
@@ -81,6 +85,7 @@ public class CodefAuthController implements CodefAuthControllerApiSpec{
     /**
      * 은행 계좌 목록 조회
      */
+    @Override
     @GetMapping("/bank/accounts")
     public ResponseEntity<?> bankAccounts(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -94,6 +99,7 @@ public class CodefAuthController implements CodefAuthControllerApiSpec{
      * 은행 거래 내역
      */
     // TODO 불필요시 삭제
+    @Override
     @PostMapping("/bank/transactions")
     public ResponseEntity<?> bankTransactions(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -106,6 +112,7 @@ public class CodefAuthController implements CodefAuthControllerApiSpec{
     /**
      * 보유 카드 목록 조회
      */
+    @Override
     @GetMapping("/owned")
     public ResponseEntity<?> ownedCards(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -118,6 +125,7 @@ public class CodefAuthController implements CodefAuthControllerApiSpec{
     /**
      * 카드 거래 내역 조회
      */
+    @Override
     @PostMapping("/billing")
     public ResponseEntity<?> billing(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -131,6 +139,7 @@ public class CodefAuthController implements CodefAuthControllerApiSpec{
     /**
      * CODEF에 연결된 계좌(자격)를 삭제.
      */
+    @Override
     @DeleteMapping("/delete") // DB 리소스 삭제가 아니므로 POST 방식 사용
     public ResponseEntity<?> deleteAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,

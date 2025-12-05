@@ -30,6 +30,7 @@ public class TripController implements TripControllerApiSpec{
     /**
      * 여행 플랜 생성
      */
+    @Override
     @PostMapping
     public ResponseEntity<TripPlanResponseDTO> createTripPlan(@RequestBody TripPlanRequestDTO request) {
         TripPlanResponseDTO response = tripPlanService.createTripPlans(request);
@@ -40,6 +41,7 @@ public class TripController implements TripControllerApiSpec{
      * 여행 플랜 조회
      * 사용자별 여행 플랜 리스트 반환
      */
+    @Override
     @GetMapping
     public ResponseEntity<List<TripPlanListResponseDTO>> getUserTripPlans(@AuthenticationPrincipal CustomOAuth2User customUser){
         Long userId = customUser.getUserId();
@@ -49,6 +51,7 @@ public class TripController implements TripControllerApiSpec{
     /**
      * 여행 플랜 상세 조회
      */
+    @Override
     @GetMapping("/{planId}")
     public ResponseEntity<?> getPlanDetail(
             @PathVariable Long planId,
@@ -61,6 +64,7 @@ public class TripController implements TripControllerApiSpec{
     /**
      * 여행 플랜 수정
      */
+    @Override
     @PatchMapping("/{planId}")
     public ResponseEntity<TripPlanResponseDTO> putPlan(
             @PathVariable Long planId,
@@ -73,6 +77,7 @@ public class TripController implements TripControllerApiSpec{
     /**
      * 여행 멤버 추가
      */
+    @Override
     @PostMapping("/{planId}/members")
     public ResponseEntity<TripPlanResponseDTO> addTripMember(
             @PathVariable Long planId,
@@ -86,6 +91,7 @@ public class TripController implements TripControllerApiSpec{
      * 여행 플랜 탈퇴
      */
     // TODO 아무도 없는 유령 플랜 삭제 로직 추가
+    @Override
     @DeleteMapping("/{planId}")
     public ResponseEntity<TripPlanResponseDTO> leavePlan(
             @PathVariable Long planId,
@@ -102,6 +108,7 @@ public class TripController implements TripControllerApiSpec{
      * 마지막 동기화 < 3시간 -> DB에서 바로 금액 반환
      * 마지막 동기화 >= 3시간: CODEF 비동기 호출
      */
+    @Override
     @GetMapping("/{tripPlanId}/balances")
     public List<UserBalanceResponseDTO> getBalances(@PathVariable Long tripPlanId) {
         return tripPlanService.getUserBalances(tripPlanId);
@@ -110,6 +117,7 @@ public class TripController implements TripControllerApiSpec{
     /**
      * 여행 경비 계산
      */
+    @Override
     @PostMapping("/budget")
     public ResponseEntity<TripBudgetResponseDTO> getTripBudget(@RequestBody TripBudgetRequestDTO request) {
         TripBudgetResponseDTO budget = tripPlanService.getTripBudget(request);
@@ -119,6 +127,7 @@ public class TripController implements TripControllerApiSpec{
     /**
      * 여행 플랜 카테고리별 목표 달성 여부 변경
      */
+    @Override
     @PostMapping("/isconsumed")
     public ResponseEntity<isConsumedResponseDTO> switchIsConsumed(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -131,6 +140,7 @@ public class TripController implements TripControllerApiSpec{
     /**
      * 여행 플랜 카테고리 조회
      */
+    @Override
     @GetMapping("/isconsumed/{planId}")
     public ResponseEntity<List<CategoryDTO>> getIsConsumed(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -143,6 +153,7 @@ public class TripController implements TripControllerApiSpec{
     /**
      * 여행 플랜 카테고리 변경
      */
+    @Override
     @PatchMapping("/category")
     public ResponseEntity<CategoryResponseDTO> patchCategory(
             @AuthenticationPrincipal CustomOAuth2User customUser,

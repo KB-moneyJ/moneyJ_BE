@@ -21,6 +21,7 @@ public class UserController implements UserControllerApiSpec{
     private final UserService userService;
 
 //    @PreAuthorize("hasRole('USER')")
+    @Override
     @GetMapping()
     public ResponseEntity<UserResponseDTO> getUser() {
         UserResponseDTO userResponseDTO = userService.getUser();
@@ -28,6 +29,7 @@ public class UserController implements UserControllerApiSpec{
         return ResponseEntity.ok(userResponseDTO);
     }
 
+    @Override
     @PostMapping("/check")
     public ResponseEntity<List<UserCheckResponseDTO>> checkUserByEmail(
         @RequestBody UserCheckRequestDTO request
