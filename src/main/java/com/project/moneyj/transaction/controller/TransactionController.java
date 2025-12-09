@@ -19,6 +19,7 @@ public class TransactionController implements TransactionControllerApiSpec{
     private final TransactionFacade transactionFacade;
     private final TransactionSummaryService transactionSummaryService;
 
+    @Override
     @PostMapping("/save")
     public ResponseEntity<Void> saveCardTransactions(
         @AuthenticationPrincipal CustomOAuth2User customUser,

@@ -21,6 +21,7 @@ public class AuthController implements AuthControllerApiSpec{
 
     private final TempAuthCodeService tempAuthCodeService;
 
+    @Override
     @GetMapping("/validate")
     public ResponseEntity<SessionResponseDTO> validateSession(HttpServletRequest request) {
         HttpSession session = request.getSession(false);
@@ -28,6 +29,7 @@ public class AuthController implements AuthControllerApiSpec{
         return ResponseEntity.ok(new SessionResponseDTO(isValid));
     }
 
+    @Override
     @PostMapping("/exchange")
     public ResponseEntity<TokenResponse> exchangeTempCode(@RequestBody TempAuthCodeRequestDTO request) {
         TokenResponse response = tempAuthCodeService.exchangeTempCode(request.getCode());
