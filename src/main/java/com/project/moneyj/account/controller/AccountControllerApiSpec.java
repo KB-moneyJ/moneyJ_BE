@@ -10,7 +10,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestBody;
 
 @Tag(name = "Accounts", description = "여행 플랜 계좌 API")
 public interface AccountControllerApiSpec {
@@ -38,4 +39,7 @@ public interface AccountControllerApiSpec {
             @Parameter(description = "조회할 계좌번호", required = true, example = "123-456-789012")
             @PathVariable String accountNumber
     );
+
+    @Operation(summary = "DB에서 계좌 삭제", description = "계좌를 DB에서 삭제합니다.(codef와 연결은 삭제 안됨)")
+    ResponseEntity<Void> deleteAccount(@PathVariable Long accountId);
 }
