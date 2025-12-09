@@ -1,12 +1,13 @@
 package com.project.moneyj.trip.dto;
 
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import java.time.LocalDate;
+import lombok.NoArgsConstructor;
 
 
 @Data
+@NoArgsConstructor
 @AllArgsConstructor
 public class TripBudgetRequestDTO {
     private String country;
