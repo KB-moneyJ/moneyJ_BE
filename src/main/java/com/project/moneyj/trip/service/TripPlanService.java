@@ -286,7 +286,7 @@ public class TripPlanService {
      * 마지막 동기화 >= 3시간: CODEF 비동기(syncAccountIfNeeded) 호출
      */
     @Transactional(readOnly = true)
-    public UserBalanceResponseDTO getUserBalances(Long userId, Long tripPlanId) {
+    public UserBalanceResponseDTO getUserBalances(Long tripPlanId) {
 
         // 요청된 플랜이 실제 존재하는지 확인
         TripPlan tripPlan = tripPlanRepository.findById(tripPlanId)
@@ -303,8 +303,10 @@ public class TripPlanService {
                     .build();
         }
 
-        // userId + orgCode 기준으로 CODEF 응답 캐싱 (한 유저/기관당 한 번만 호출하려고)
-        Map<String, List<Map<String, Object>>> codefCache = new HashMap<>();
+        List<Category> categories = categoryRepository.findByTripPlanId(tripPlanId);
+
+        Map<Long, List<Category>> categoriesMap = categories.stream()
+                .collect(Collectors.groupingBy(c -> c.getTripMember().getUser().getUserId()));
 
         // 각 개인별 달성률 계산
         List<UserBalanceResponseDTO.UserBalanceInfo> userBalanceInfos = accounts.stream()
@@ -312,15 +314,15 @@ public class TripPlanService {
 
                     // 3시간 갱신 검사
                     if (account.isStale(STALE_THRESHOLD)) {
-                        syncAccountIfNeeded(account, codefCache);
+                        syncAccountIfNeeded(account);
                     }
+
+                    Long currentUserId = account.getUser().getUserId();
+                    List<Category> myCategories = categoriesMap.getOrDefault(currentUserId, Collections.emptyList());
 
                     int accountBalance = Optional.ofNullable(account.getBalance()).orElse(0);
 
-                    // isConsumed == true 인 카테고리만 반영
-                    List<Category> categories = categoryRepository.findByUserIdAndTripPlanId(userId, tripPlanId);
-
-                    int consumedCategorySum = categories.stream()
+                    int consumedCategorySum = myCategories.stream()
                             .filter(Category::isConsumed) // 혹은 c -> Boolean.TRUE.equals(c.getIsConsumed())
                             .mapToInt(c -> Optional.ofNullable(c.getAmount()).orElse(0))
                             .sum();
@@ -416,8 +418,7 @@ public class TripPlanService {
      * 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
      */
     @Transactional
-    public void syncAccountIfNeeded(Account account,
-                                     Map<String, List<Map<String, Object>>> codefCache) {
+    public void syncAccountIfNeeded(Account account) {
 
         Long userId = account.getUser().getUserId();
         String orgCode = account.getOrganizationCode();
@@ -427,31 +428,24 @@ public class TripPlanService {
             return;
         }
 
-        String cacheKey = userId + "|" + orgCode;
+        // CODEF API 호출
+        Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
 
-        // 1. 캐시에서 조회하거나, 없으면 CODEF 호출
-        List<Map<String, Object>> accountsFromCodef =
-                codefCache.computeIfAbsent(cacheKey, key -> {
-                    Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
-                    Map<String, Object> data = (Map<String, Object>) res.get("data");
-
-                    if (data == null || data.get("resDepositTrust") == null) {
-                        return Collections.emptyList();
-                    }
-                    return (List<Map<String, Object>>) data.get("resDepositTrust");
-                });
-
-        if (accountsFromCodef.isEmpty()) {
-            return; // CODEF 쪽 문제거나 계좌 없음 → 기존 스냅샷 유지
+        Map<String, Object> data = (Map<String, Object>) res.get("data");
+        if (data == null || data.get("resDepositTrust") == null) {
+            return;
         }
 
-        // 2. 현재 Account와 매칭되는 CODEF 계좌 찾기
+        List<Map<String, Object>> accountsFromCodef = (List<Map<String, Object>>) data.get("resDepositTrust");
+
+        // 현재 Account와 매칭되는 CODEF 계좌 찾아서 업데이트
         accountsFromCodef.stream()
                 .filter(m -> accountNumber.equals(String.valueOf(m.get("resAccount"))))
                 .findFirst()
                 .ifPresent(map -> {
-                    Integer latestBalance = Integer.parseInt(String.valueOf(map.get("resAccountBalance")));
-                    account.updateBalance(latestBalance); // 스냅샷 갱신
+
+                    long balanceLong = Long.parseLong(String.valueOf(map.get("resAccountBalance")));
+                    account.updateBalance((int) balanceLong);
                 });
     }
 

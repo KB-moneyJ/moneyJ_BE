@@ -104,11 +104,10 @@ public class TripController implements TripControllerApiSpec{
      */
     @GetMapping("/{tripPlanId}/balances")
     public ResponseEntity<UserBalanceResponseDTO> getBalances(
-            @AuthenticationPrincipal CustomOAuth2User customUser,
             @PathVariable Long tripPlanId
     ) {
-        Long userId = customUser.getUserId();
-        UserBalanceResponseDTO response = tripPlanService.getUserBalances(userId, tripPlanId);
+
+        UserBalanceResponseDTO response = tripPlanService.getUserBalances(tripPlanId);
         return ResponseEntity.ok(response);
     }
 

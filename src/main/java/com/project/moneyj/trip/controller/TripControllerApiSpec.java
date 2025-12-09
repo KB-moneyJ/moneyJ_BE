@@ -58,7 +58,6 @@ public interface TripControllerApiSpec {
 
     @Operation(summary = "여행 멤버별 저축 금액 및 달성률 조회", description = "여행 플랜 내 멤버들의 현재 저축 금액과 달성률을 조회합니다.")
     ResponseEntity<UserBalanceResponseDTO> getBalances(
-            @AuthenticationPrincipal CustomOAuth2User customUser,
             @Parameter(description = "정산 조회할 플랜 ID") @PathVariable Long tripPlanId
     );
 
