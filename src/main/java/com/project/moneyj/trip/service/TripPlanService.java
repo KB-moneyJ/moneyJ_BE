@@ -285,7 +285,7 @@ public class TripPlanService {
      * 마지막 동기화 < 3시간 -> DB에서 바로 금액 반환
      * 마지막 동기화 >= 3시간: CODEF 비동기(syncAccountIfNeeded) 호출
      */
-    @Transactional(readOnly = false) // 내부에서 balance 갱신하니 write 허용
+    @Transactional(readOnly = false)
     public UserBalanceResponseDTO getUserBalances(Long userId, Long tripPlanId) {
 
         // 요청된 플랜이 실제 존재하는지 확인

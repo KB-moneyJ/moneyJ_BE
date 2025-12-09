@@ -25,7 +25,6 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
       SELECT c
       FROM Category c
       JOIN FETCH c.tripMember
-      JOIN FETCH c.tripPlan
       WHERE c.tripMember.user.userId = :userId
       AND c.tripPlan.tripPlanId = :tripPlanId
     """)
