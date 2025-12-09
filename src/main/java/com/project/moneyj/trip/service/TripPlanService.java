@@ -285,7 +285,7 @@ public class TripPlanService {
      * 마지막 동기화 < 3시간 -> DB에서 바로 금액 반환
      * 마지막 동기화 >= 3시간: CODEF 비동기(syncAccountIfNeeded) 호출
      */
-    @Transactional(readOnly = false)
+    @Transactional(readOnly = true)
     public UserBalanceResponseDTO getUserBalances(Long userId, Long tripPlanId) {
 
         // 요청된 플랜이 실제 존재하는지 확인
@@ -415,7 +415,8 @@ public class TripPlanService {
     /**
      * 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
      */
-    private void syncAccountIfNeeded(Account account,
+    @Transactional
+    public void syncAccountIfNeeded(Account account,
                                      Map<String, List<Map<String, Object>>> codefCache) {
 
         Long userId = account.getUser().getUserId();
