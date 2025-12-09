@@ -287,7 +287,7 @@ public class TripPlanService {
 
                     // 3시간 갱신 검사
                     if (account.isStale(STALE_THRESHOLD)) {
-                        syncAccountIfNeeded(account);
+                        accountService.syncAccountIfNeeded(account);
                     }
 
                     Long currentUserId = account.getUser().getUserId();
@@ -339,41 +339,6 @@ public class TripPlanService {
                 .tripPlanProgress(tripPlanProgress)
                 .userBalanceInfoList(userBalanceInfos)
                 .build();
-    }
-
-    /**
-     * 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
-     */
-    @Transactional
-    public void syncAccountIfNeeded(Account account) {
-
-        Long userId = account.getUser().getUserId();
-        String orgCode = account.getOrganizationCode();
-        String accountNumber = account.getAccountNumber();
-
-        if (orgCode == null || accountNumber == null) {
-            return;
-        }
-
-        // CODEF API 호출
-        Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
-
-        Map<String, Object> data = (Map<String, Object>) res.get("data");
-        if (data == null || data.get("resDepositTrust") == null) {
-            return;
-        }
-
-        List<Map<String, Object>> accountsFromCodef = (List<Map<String, Object>>) data.get("resDepositTrust");
-
-        // 현재 Account와 매칭되는 CODEF 계좌 찾아서 업데이트
-        accountsFromCodef.stream()
-                .filter(m -> accountNumber.equals(String.valueOf(m.get("resAccount"))))
-                .findFirst()
-                .ifPresent(map -> {
-
-                    long balanceLong = Long.parseLong(String.valueOf(map.get("resAccountBalance")));
-                    account.updateBalance((int) balanceLong);
-                });
     }
 
     /**
