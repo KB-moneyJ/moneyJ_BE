@@ -253,33 +253,6 @@ public class TripPlanService {
         return new TripPlanResponseDTO(planId, "해당 플랜을 삭제하였습니다.");
     }
 
-//    @Transactional(readOnly = true)
-//    public List<UserBalanceResponseDTO> getUserBalances(Long tripPlanId) {
-//        List<Account> accounts = accountRepository.findByTripPlanId(tripPlanId);
-//
-//        return accounts.stream()
-//                .map(a -> {
-//                    double rawProgress = 0.0;
-//                    TripPlan tp = a.getTripPlan();
-//                    if (tp != null && tp.getTotalBudget() != null && tp.getTotalBudget() > 0) {
-//                        rawProgress = (a.getBalance() * 100.0) / tp.getTotalBudget();
-//                    }
-//                    // 소수점 1자리로 반올림
-//                    double progress = new BigDecimal(rawProgress)
-//                            .setScale(1, RoundingMode.HALF_UP)
-//                            .doubleValue();
-//
-//                    return new UserBalanceResponseDTO(
-//                            a.getUser().getUserId(),
-//                            a.getUser().getNickname(),
-//                            a.getUser().getProfileImage(),
-//                            a.getBalance(),
-//                            progress
-//                    );
-//                })
-//                .toList();
-//    }
-
     /**
      * 여행 멤버별 저축 금액 조회 및 업데이트
      * 마지막 동기화 < 3시간 -> DB에서 바로 금액 반환
@@ -323,7 +296,7 @@ public class TripPlanService {
                     int accountBalance = Optional.ofNullable(account.getBalance()).orElse(0);
 
                     int consumedCategorySum = myCategories.stream()
-                            .filter(Category::isConsumed) // 혹은 c -> Boolean.TRUE.equals(c.getIsConsumed())
+                            .filter(Category::isConsumed)
                             .mapToInt(c -> Optional.ofNullable(c.getAmount()).orElse(0))
                             .sum();
 
@@ -367,52 +340,6 @@ public class TripPlanService {
                 .userBalanceInfoList(userBalanceInfos)
                 .build();
     }
-
-//    @Transactional(readOnly = false) // 내부에서 balance 갱신하니 write 허용
-//    public UserBalanceResponseDTO getUserBalances(Long tripPlanId) {
-//
-//
-//        // 요청된 플랜이 실제 존재하는지 확인
-//        tripPlanRepository.findById(tripPlanId)
-//                .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
-//
-//        List<Account> accounts = accountRepository.findByTripPlanId(tripPlanId);
-//
-//        // userId + orgCode 기준으로 CODEF 응답 캐싱 (한 유저/기관당 한 번만 호출하려고)
-//        Map<String, List<Map<String, Object>>> codefCache = new HashMap<>();
-//
-//
-//
-//        return accounts.stream()
-//                .map(account -> {
-//                    // 1) 필요하면 CODEF 호출해서 해당 계좌 잔액 갱신
-//                    if (account.isStale(STALE_THRESHOLD)) {
-//                        syncAccountIfNeeded(account, codefCache);
-//                    }
-//
-//                    // 2) 갱신된(또는 기존) 스냅샷으로 달성률 계산
-//                    TripPlan tp = account.getTripPlan();
-//                    int balance = Optional.ofNullable(account.getBalance()).orElse(0);
-//                    double rawProgress = 0.0;
-//
-//                    if (tp != null && tp.getTotalBudget() != null && tp.getTotalBudget() > 0) {
-//                        rawProgress = (balance * 100.0) / tp.getTotalBudget();
-//                    }
-//
-//                    double progress = BigDecimal.valueOf(rawProgress)
-//                            .setScale(1, RoundingMode.HALF_UP)
-//                            .doubleValue();
-//
-//                    return new UserBalanceResponseDTO(
-//                            account.getUser().getUserId(),
-//                            account.getUser().getNickname(),
-//                            account.getUser().getProfileImage(),
-//                            balance,
-//                            progress
-//                    );
-//                })
-//                .toList();
-//    }
 
     /**
      * 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
