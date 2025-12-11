@@ -128,8 +128,12 @@ public class TripController implements TripControllerApiSpec{
      */
     @Override
     @GetMapping("/{tripPlanId}/balances")
-    public List<UserBalanceResponseDTO> getBalances(@PathVariable Long tripPlanId) {
-        return tripPlanService.getUserBalances(tripPlanId);
+    public ResponseEntity<UserBalanceResponseDTO> getBalances(
+            @PathVariable Long tripPlanId
+    ) {
+
+        UserBalanceResponseDTO response = tripPlanService.getUserBalances(tripPlanId);
+        return ResponseEntity.ok(response);
     }
 
     /**
