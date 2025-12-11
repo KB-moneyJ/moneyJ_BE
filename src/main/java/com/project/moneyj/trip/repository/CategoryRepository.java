@@ -24,7 +24,7 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     """)
     List<Category> findByTripPlanId(@Param("tripPlanId") Long tripPlanId);
 
-    @Query(value = "SELECT * FROM category WHERE category_name = :categoryName AND trip_member_id = :memberId", nativeQuery = true)
+    @Query("SELECT c FROM Category c WHERE c.categoryName = :categoryName AND c.tripMember.tripMemberId = :memberId")
     Optional<Category> findByCategoryNameAndMemberIdNative(@Param("categoryName") String categoryName, @Param("memberId") Long memberId);
 
 }
