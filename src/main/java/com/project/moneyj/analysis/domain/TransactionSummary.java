@@ -1,5 +1,6 @@
 package com.project.moneyj.analysis.domain;
 
+import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.transaction.domain.TransactionCategory;
 import com.project.moneyj.user.domain.User;
 import jakarta.persistence.Entity;
@@ -26,7 +27,7 @@ import lombok.*;
         @UniqueConstraint(columnNames = {"user_id", "yearMonth", "transactionCategory"
     })
 })
-public class TransactionSummary {
+public class TransactionSummary extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long transaction_summary_id;
@@ -41,7 +42,7 @@ public class TransactionSummary {
     private String summaryMonth;
     private Integer totalAmount = 0;
     private Integer transactionCount = 0;
-    private LocalDate updateAt;
+    //private LocalDate updateAt;
 
     // === 생성자 (도메인 내부용) ===
     @Builder(access = AccessLevel.PRIVATE)
@@ -59,7 +60,6 @@ public class TransactionSummary {
         this.summaryMonth = summaryMonth;
         this.totalAmount = totalAmount;
         this.transactionCount = transactionCount;
-        this.updateAt = updateAt;
     }
 
     // === 정적 팩토리 메서드 ===
@@ -78,7 +78,6 @@ public class TransactionSummary {
                 .summaryMonth(summaryMonth)
                 .totalAmount(totalAmount)
                 .transactionCount(transactionCount)
-                .updateAt(updateAt)
                 .build();
     }
 }

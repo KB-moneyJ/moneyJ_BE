@@ -1,5 +1,6 @@
 package com.project.moneyj.codef.domain;
 
+import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.user.domain.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "codef_institution")
-public class CodefInstitution {
+public class CodefInstitution extends BaseTimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "codef_institution_id", nullable = false)
@@ -48,15 +49,15 @@ public class CodefInstitution {
     @Column(name = "last_result_msg", length = 255)
     private String lastResultMsg;
 
-    // 생성 일시
-    @CreationTimestamp
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    // 수정 일시
-    @UpdateTimestamp
-    @Column(name = "updated_at", nullable = false)
-    private LocalDateTime updatedAt;
+//    // 생성 일시
+//    @CreationTimestamp
+//    @Column(name = "created_at", nullable = false, updatable = false)
+//    private LocalDateTime createdAt;
+//
+//    // 수정 일시
+//    @UpdateTimestamp
+//    @Column(name = "updated_at", nullable = false)
+//    private LocalDateTime updatedAt;
 
     // === 생성자 (도메인 내부용) ===
     @Builder(access =  AccessLevel.PRIVATE)
@@ -81,8 +82,6 @@ public class CodefInstitution {
         this.lastVerifiedAt = lastVerifiedAt;
         this.lastResultCode = lastResultCode;
         this.lastResultMsg = lastResultMsg;
-        this.createdAt = createdAt;
-        this.updatedAt = updatedAt;
     }
 
     // === 정적 팩토리 메서드 ===
@@ -108,8 +107,6 @@ public class CodefInstitution {
                 .lastVerifiedAt(lastVerifiedAt)
                 .lastResultCode(lastResultCode)
                 .lastResultMsg(lastResultMsg)
-                .createdAt(createdAt)
-                .updatedAt(updatedAt)
                 .build();
     }
 

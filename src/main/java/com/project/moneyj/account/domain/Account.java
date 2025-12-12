@@ -1,11 +1,14 @@
 package com.project.moneyj.account.domain;
 
+import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.user.domain.User;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 
 @Entity
@@ -25,7 +28,7 @@ import java.time.LocalDateTime;
                 )
         }
 )
-public class Account {
+public class Account extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,7 +53,7 @@ public class Account {
 
     private String accountName;
 
-    private LocalDateTime lastUpdateAt;
+    //private LocalDateTime lastUpdateAt;
 
     // === 기본 생성자 (내부용) ===
     @Builder(access = AccessLevel.PRIVATE)
@@ -70,7 +73,6 @@ public class Account {
         this.balance = balance;
         this.organizationCode = organizationCode;
         this.accountName = accountName;
-        this.lastUpdateAt = lastUpdateAt;
     }
 
     // === 정적 팩토리 메서드 ===
@@ -90,18 +92,23 @@ public class Account {
                 .balance(balance)
                 .organizationCode(organizationCode)
                 .accountName(accountName)
-                .lastUpdateAt(LocalDateTime.now())
                 .build();
     }
 
     // === 비즈니스 로직 ===
     public void updateBalance(Integer balance) {
         this.balance = balance;
-        this.lastUpdateAt = LocalDateTime.now();
     }
 
-    public boolean isStale(Duration threshold){
-        return lastUpdateAt == null || lastUpdateAt.isBefore(LocalDateTime.now().minus(threshold));
+    public boolean isStale(Duration threshold, Clock clock){
+
+        Instant now = Instant.now(clock);
+
+        if(getUpdatedAt() == null){
+            return true;
+        }
+
+        return getUpdatedAt().isBefore(now.minus(threshold));
     }
 
 }

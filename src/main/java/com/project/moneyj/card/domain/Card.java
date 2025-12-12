@@ -1,15 +1,16 @@
 package com.project.moneyj.card.domain;
 
+import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.user.domain.User;
 import jakarta.persistence.*;
 import lombok.*;
 
-@Data
+@Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "card")
-public class Card {
+public class Card extends BaseTimeEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -58,6 +59,9 @@ public class Card {
                 .build();
     }
 
-
+    // ==== 비즈니스 메서드 ====
+    public void setCardName(String cardName){
+        this.cardName = cardName;
+    }
 }
 
