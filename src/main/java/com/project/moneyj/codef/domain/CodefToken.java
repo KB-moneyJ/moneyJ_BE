@@ -1,6 +1,7 @@
 package com.project.moneyj.codef.domain;
 
 import com.project.moneyj.codef.dto.TokenResponseDTO;
+import com.project.moneyj.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -10,7 +11,7 @@ import java.time.LocalDateTime;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "codef_token")
-public class CodefToken {
+public class CodefToken extends BaseTimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "codef_token_id", nullable = false)
@@ -22,13 +23,8 @@ public class CodefToken {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-    @PrePersist
-    public void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-    }
+//    @Column(name = "created_at", nullable = false, updatable = false)
+//    private LocalDateTime createdAt;
 
     // === 생성자 (도메인 내부용) ===
     private CodefToken(String accessToken, LocalDateTime expiresAt){

@@ -1,5 +1,6 @@
 package com.project.moneyj.trip.domain;
 
+import com.project.moneyj.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -7,7 +8,7 @@ import lombok.*;
 @Getter
 @Table(name = "trip_saving_phrase")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class TripSavingPhrase {
+public class TripSavingPhrase extends BaseTimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long tripSavingPhraseId;

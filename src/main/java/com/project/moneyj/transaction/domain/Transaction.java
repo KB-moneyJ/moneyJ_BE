@@ -1,5 +1,6 @@
 package com.project.moneyj.transaction.domain;
 
+import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.user.domain.User;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -19,7 +20,7 @@ import lombok.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "transaction")
-public class Transaction {
+public class Transaction extends BaseTimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long transaction_id;
@@ -42,7 +43,7 @@ public class Transaction {
     private String storeType;
     private String approvalNo;
 
-    private LocalDateTime updateAt;
+//    private LocalDateTime updateAt;
 
     // === 생성자 (도메인 내부용) ===
     @Builder(access = AccessLevel.PRIVATE)
@@ -68,7 +69,6 @@ public class Transaction {
         this.storeNo = storeNo;
         this.storeType = storeType;
         this.approvalNo = approvalNo;
-        this.updateAt = updateAt;
     }
 
     // === 정적 팩토리 메서드 ===
@@ -95,7 +95,6 @@ public class Transaction {
                 .storeNo(storeNo)
                 .storeType(storeType)
                 .approvalNo(approvalNo)
-                .updateAt(updateAt)
                 .build();
     }
 
