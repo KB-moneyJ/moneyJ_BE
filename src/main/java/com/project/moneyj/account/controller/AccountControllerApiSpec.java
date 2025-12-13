@@ -42,4 +42,19 @@ public interface AccountControllerApiSpec {
 
     @Operation(summary = "DB에서 계좌 삭제", description = "계좌를 DB에서 삭제합니다.(codef와 연결은 삭제 안됨)")
     ResponseEntity<Void> deleteAccount(@PathVariable Long accountId);
+
+    @Operation(
+            summary = "계좌번호 수동 업데이트",
+            description = "계좌 잔액을 수동으로 업데이트하고 조회합니ㅏㄷ."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "현재 계좌 잔액 반환"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청(계좌번호 형식 오류 등)"),
+            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    ResponseEntity<AccountLinkResponseDTO> manualAccountUpdate(
+            @Parameter(description = "조회할 계좌 PK", required = true, example = "12")
+            @PathVariable Long accId
+    );
+
 }

@@ -1,5 +1,6 @@
 package com.project.moneyj.trip.domain;
 
+import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.trip.dto.CategoryDTO;
 import jakarta.persistence.*;
 import lombok.*;
@@ -8,7 +9,7 @@ import lombok.*;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "category")
-public class Category {
+public class Category extends BaseTimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "category_id")
