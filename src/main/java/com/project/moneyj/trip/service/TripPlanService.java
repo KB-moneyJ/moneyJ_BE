@@ -277,7 +277,7 @@ public class TripPlanService {
     /**
      * 여행 멤버별 저축 금액 조회 및 업데이트
      * 마지막 동기화 < 3시간 -> DB에서 바로 금액 반환
-     * 마지막 동기화 >= 3시간: CODEF 비동기(syncAccountIfNeeded) 호출
+     * 마지막 동기화 >= 3시간: CODEF (syncAccountIfNeeded) 호출
      */
     // TODO: 달성률 계산 부분 calcProgress 사용 고려
     @Transactional(readOnly = true)
