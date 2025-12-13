@@ -1,11 +1,9 @@
 package com.project.moneyj.trip.dto;
 
-import com.project.moneyj.trip.domain.TripPlan;
+import java.time.LocalDate;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
-import java.time.LocalDate;
 
 @Data
 @Builder
@@ -24,17 +22,19 @@ public class TripPlanListResponseDTO {
     private LocalDate tripEndDate;
     private Integer totalBudget;
     private Integer memberCount;
+    private double groupProgress;
 
-    public static TripPlanListResponseDTO fromEntity(TripPlan entity){
+    public static TripPlanListResponseDTO of(TripPlanListDTO tripPlan, double progress){
         return new TripPlanListResponseDTO(
-                entity.getTripPlanId(),
-                entity.getCountry(),
-                entity.getCountryCode(),
-                entity.getCity(),
-                entity.getTripStartDate(),
-                entity.getTripEndDate(),
-                entity.getTotalBudget(),
-                entity.getMembersCount()
+            tripPlan.getPlanId(),
+            tripPlan.getCountry(),
+            tripPlan.getCountryCode(),
+            tripPlan.getCity(),
+            tripPlan.getTripStartDate(),
+            tripPlan.getTripEndDate(),
+            tripPlan.getTotalBudget(),
+            tripPlan.getMembersCount(),
+            progress
         );
     }
 }
