@@ -185,6 +185,59 @@ public class AccountService {
                 });
     }
 
+    @Transactional
+    public AccountLinkResponseDTO manualAccount(Long accId) {
+
+        Account account = accountRepository.findById(accId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+
+        Long userId = account.getUser().getUserId();
+        String orgCode = account.getOrganizationCode();
+        String accountNumber = account.getAccountNumber();
+
+        if (orgCode == null || accountNumber == null) {
+            return AccountLinkResponseDTO.builder()
+                    .accountId(userId)
+                    .accountName("")
+                    .accountNumberDisplay(maskAdvanced(accountNumber))
+                    .balance(0)
+                    .build();
+        }
+
+        // CODEF API 호출
+        Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
+
+        Map<String, Object> data = (Map<String, Object>) res.get("data");
+        if (data == null || data.get("resDepositTrust") == null) {
+            return AccountLinkResponseDTO.builder()
+                    .accountId(userId)
+                    .accountName("")
+                    .accountNumberDisplay(maskAdvanced(accountNumber))
+                    .balance(0)
+                    .build();
+        }
+
+        List<Map<String, Object>> accountsFromCodef = (List<Map<String, Object>>) data.get("resDepositTrust");
+
+        // 현재 Account와 매칭되는 CODEF 계좌 찾아서 업데이트
+        accountsFromCodef.stream()
+                .filter(m -> accountNumber.equals(String.valueOf(m.get("resAccount"))))
+                .findFirst()
+                .ifPresent(map -> {
+
+                    long balanceLong = Long.parseLong(String.valueOf(map.get("resAccountBalance")));
+                    account.updateBalance((int) balanceLong);
+                });
+
+
+        return AccountLinkResponseDTO.builder()
+                .accountId(userId)
+                .accountName(account.getAccountName())
+                .accountNumberDisplay(maskAdvanced(accountNumber))
+                .balance(account.getBalance())
+                .build();
+    }
+
     // "1234-****-5678" 형태로 마스킹
     public static String maskAdvanced(String accountNumber) {
         if (accountNumber == null || accountNumber.length() < 8) {

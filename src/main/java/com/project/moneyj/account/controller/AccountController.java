@@ -4,6 +4,7 @@ import com.project.moneyj.account.service.AccountService;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
 import com.project.moneyj.account.dto.AccountLinkResponseDTO;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
+import com.project.moneyj.trip.dto.UserBalanceResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -38,9 +39,14 @@ public class AccountController implements AccountControllerApiSpec{
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
+    /**
+     * 계좌 삭제
+     */
     @Override
     @DeleteMapping("/{accountId}")
-    public ResponseEntity<Void> deleteAccount(@PathVariable Long accountId) {
+    public ResponseEntity<Void> deleteAccount(
+            @PathVariable Long accountId
+    ) {
         accountService.deleteAccount(accountId);
         return ResponseEntity.noContent().build();
     }
@@ -50,7 +56,20 @@ public class AccountController implements AccountControllerApiSpec{
      */
     @Override
     @GetMapping("/check/{accountNumber}")
-    public boolean checkAccountOwnership(@PathVariable String accountNumber) {
+    public boolean checkAccountOwnership(
+            @PathVariable String accountNumber
+    ) {
         return accountService.checkAccountOwnership(accountNumber);
+    }
+
+    /**
+     * 계좌 수동 업데이트 및 조회
+     */
+    @Override
+    @GetMapping("/{accId}")
+    public ResponseEntity<AccountLinkResponseDTO> manualAccountUpdate(
+            @PathVariable Long accId
+    ){
+        return ResponseEntity.ok(accountService.manualAccount(accId));
     }
 }
