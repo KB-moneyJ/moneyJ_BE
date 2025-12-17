@@ -40,28 +40,19 @@ public interface TripPlanRepository extends JpaRepository<TripPlan, Long> {
                 ), 0)
                 +
                 COALESCE((
-                    SELECT SUM(CASE WHEN c.isConsumed = TRUE THEN c.amount ELSE 0 END)
+                    SELECT SUM(c.amount)
                     FROM Category c
                     WHERE c.tripPlan.tripPlanId = tp.tripPlanId
+                      AND c.isConsumed = TRUE
                 ), 0)
             )
             FROM TripPlan tp
-            LEFT JOIN Account a ON a.tripPlan.tripPlanId = tp.tripPlanId
-            LEFT JOIN Category c ON c.tripPlan.tripPlanId = tp.tripPlanId
-            WHERE tp.tripPlanId IN (
-                SELECT tm.tripPlan.tripPlanId
+            WHERE EXISTS (
+                SELECT 1
                 FROM TripMember tm
-                WHERE tm.user.userId = :userId
+                WHERE tm.tripPlan = tp
+                  AND tm.user.userId = :userId
             )
-            GROUP BY
-                tp.tripPlanId,
-                tp.country,
-                tp.countryCode,
-                tp.city,
-                tp.tripStartDate,
-                tp.tripEndDate,
-                tp.totalBudget,
-                tp.membersCount
       """)
     List<TripPlanListDTO> findAllWithProgress(@Param("userId") Long userId);
 
