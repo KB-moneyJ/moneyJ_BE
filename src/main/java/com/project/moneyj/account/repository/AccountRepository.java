@@ -1,10 +1,10 @@
 package com.project.moneyj.account.repository;
 
 import com.project.moneyj.account.domain.Account;
+import com.project.moneyj.trip.domain.TripPlan;
+import com.project.moneyj.user.domain.User;
 import java.util.List;
 import java.util.Optional;
-
-import com.project.moneyj.user.domain.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -31,4 +31,6 @@ public interface AccountRepository extends JpaRepository<Account, Long> {
                                                 @Param("tripPlanId") Long tripPlanId);
 
     Optional<Account> findByAccountNumber(String accountNumber);
+
+    void deleteByTripPlanAndUser(TripPlan tripPlan, User user);
 }

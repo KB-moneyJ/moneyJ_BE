@@ -2,27 +2,38 @@ package com.project.moneyj.trip.service;
 
 
 import com.project.moneyj.account.Service.AccountService;
+import com.project.moneyj.account.domain.Account;
+import com.project.moneyj.account.repository.AccountRepository;
 import com.project.moneyj.analysis.dto.MonthlySummaryDTO;
 import com.project.moneyj.analysis.service.TransactionSummaryService;
 import com.project.moneyj.codef.service.CodefBankService;
 import com.project.moneyj.exception.MoneyjException;
-import com.project.moneyj.exception.code.*;
+import com.project.moneyj.exception.code.CategoryErrorCode;
+import com.project.moneyj.exception.code.TripMemberErrorCode;
+import com.project.moneyj.exception.code.TripPlanErrorCode;
+import com.project.moneyj.exception.code.UserErrorCode;
 import com.project.moneyj.openai.util.PromptLoader;
-import com.project.moneyj.trip.domain.*;
-import com.project.moneyj.trip.dto.*;
-import com.project.moneyj.trip.repository.*;
-import com.project.moneyj.account.domain.Account;
-import com.project.moneyj.account.repository.AccountRepository;
+import com.project.moneyj.trip.domain.Category;
+import com.project.moneyj.trip.domain.MemberRole;
 import com.project.moneyj.trip.domain.TripMember;
 import com.project.moneyj.trip.domain.TripPlan;
+import com.project.moneyj.trip.domain.TripSavingPhrase;
+import com.project.moneyj.trip.dto.AddTripMemberRequestDTO;
+import com.project.moneyj.trip.dto.CategoryDTO;
+import com.project.moneyj.trip.dto.CategoryListRequestDTO;
+import com.project.moneyj.trip.dto.CategoryResponseDTO;
+import com.project.moneyj.trip.dto.SavingsTipResponseDTO;
+import com.project.moneyj.trip.dto.TripBudgetRequestDTO;
+import com.project.moneyj.trip.dto.TripBudgetResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanDetailResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanListResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanPatchRequestDTO;
 import com.project.moneyj.trip.dto.TripPlanRequestDTO;
 import com.project.moneyj.trip.dto.TripPlanResponseDTO;
 import com.project.moneyj.trip.dto.UserBalanceResponseDTO;
-import com.project.moneyj.trip.dto.TripBudgetResponseDTO;
-import com.project.moneyj.trip.dto.TripBudgetRequestDTO;
+import com.project.moneyj.trip.dto.isConsumedRequestDTO;
+import com.project.moneyj.trip.dto.isConsumedResponseDTO;
+import com.project.moneyj.trip.repository.CategoryRepository;
 import com.project.moneyj.trip.repository.TripMemberRepository;
 import com.project.moneyj.trip.repository.TripPlanRepository;
 import com.project.moneyj.trip.repository.TripSavingPhraseRepository;
@@ -33,9 +44,13 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
 import java.time.YearMonth;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -238,19 +253,28 @@ public class TripPlanService {
         User currentUser = userRepository.findById(currentUserId)
                 .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
-        // 해당 여행 플랜이 존재하는지 확인
-        TripPlan tripPlan = tripPlanRepository.findById(planId)
+        // 해당 여행 플랜이 존재하는지 확인 (동시 삭제/수정 막기 위한 비관락 조회)
+        TripPlan tripPlan = tripPlanRepository.findByIdWithPessimisticLock(planId)
                 .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
 
         // 사용자가 해당 플랜의 멤버인지 확인
         TripMember memberToRemove = tripMemberRepository.findByTripPlanAndUser(tripPlan, currentUser)
                 .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
-        // TripMember 삭제
-        // 고아 객체 옵션에 의해 TripPlan 의 tripMemberList 에서도 자동으로 제거 됨.
-        tripMemberRepository.delete(memberToRemove);
+        // 계좌 삭제
+        accountRepository.deleteByTripPlanAndUser(tripPlan, currentUser);
+        accountRepository.flush();
 
-        return new TripPlanResponseDTO(planId, "해당 플랜을 삭제하였습니다.");
+        // 멤버 제거 및 카운트 갱신 (orphanRemoval에 의해 TripMember, Category, Phrase 삭제됨)
+        tripPlan.removeMember(memberToRemove);
+
+        // 모든 멤버가 탈퇴된 경우
+        if (tripPlan.getTripMemberList().isEmpty()) {
+            tripPlanRepository.delete(tripPlan);
+            return new TripPlanResponseDTO(planId, "마지막 멤버가 탈퇴하여 플랜이 삭제되었습니다.");
+        }
+
+        return new TripPlanResponseDTO(planId, "해당 플랜에서 탈퇴했습니다.");
     }
 
     /**
