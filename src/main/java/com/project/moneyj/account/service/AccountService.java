@@ -225,5 +225,8 @@ public class AccountService {
     @Transactional
     public void deleteAccount(Long accountId) {
         Account account = accountRepository.findById(accountId)
-            .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
 
+        accountRepository.delete(account);
+    }
+}
