@@ -1,10 +1,9 @@
 package com.project.moneyj.trip.service;
 
 
-import com.project.moneyj.account.Service.AccountService;
+import com.project.moneyj.account.service.AccountService;
 import com.project.moneyj.analysis.dto.MonthlySummaryDTO;
 import com.project.moneyj.analysis.service.TransactionSummaryService;
-import com.project.moneyj.codef.service.CodefBankService;
 import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.*;
 import com.project.moneyj.openai.util.PromptLoader;
@@ -31,6 +30,7 @@ import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.YearMonth;
 import java.util.*;
@@ -61,7 +61,8 @@ public class TripPlanService {
     private final AccountRepository accountRepository;
     private final AccountService accountService;
     private final TransactionSummaryService transactionSummaryService;
-    private final CodefBankService codefBankService;
+
+    private final Clock clock;
 
     /**
      * 여행 플랜 생성
@@ -286,7 +287,7 @@ public class TripPlanService {
                 .map(account -> {
 
                     // 3시간 갱신 검사
-                    if (account.isStale(STALE_THRESHOLD)) {
+                    if (account.isStale(STALE_THRESHOLD, this.clock)) {
                         accountService.syncAccountIfNeeded(account);
                     }
 

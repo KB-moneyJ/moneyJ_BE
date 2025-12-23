@@ -1,4 +1,4 @@
-package com.project.moneyj.account.Service;
+package com.project.moneyj.account.service;
 
 import com.project.moneyj.account.domain.Account;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
