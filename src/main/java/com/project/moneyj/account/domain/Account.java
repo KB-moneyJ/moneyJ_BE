@@ -53,7 +53,6 @@ public class Account extends BaseTimeEntity {
 
     private String accountName;
 
-    //private LocalDateTime lastUpdateAt;
 
     // === 기본 생성자 (내부용) ===
     @Builder(access = AccessLevel.PRIVATE)

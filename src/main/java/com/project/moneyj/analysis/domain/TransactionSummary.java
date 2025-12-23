@@ -42,7 +42,6 @@ public class TransactionSummary extends BaseTimeEntity {
     private String summaryMonth;
     private Integer totalAmount = 0;
     private Integer transactionCount = 0;
-    //private LocalDate updateAt;
 
     // === 생성자 (도메인 내부용) ===
     @Builder(access = AccessLevel.PRIVATE)

@@ -23,8 +23,6 @@ public class CodefToken extends BaseTimeEntity {
     @Column(name = "expires_at", nullable = false)
     private LocalDateTime expiresAt;
 
-//    @Column(name = "created_at", nullable = false, updatable = false)
-//    private LocalDateTime createdAt;
 
     // === 생성자 (도메인 내부용) ===
     private CodefToken(String accessToken, LocalDateTime expiresAt){
