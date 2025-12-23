@@ -1,5 +1,6 @@
 package com.project.moneyj.trip.domain;
 
+import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -25,7 +26,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Table(name = "trip_member")
-public class TripMember {
+public class TripMember extends BaseTimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long tripMemberId;

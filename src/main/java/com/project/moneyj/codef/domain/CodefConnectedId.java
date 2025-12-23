@@ -1,5 +1,6 @@
 package com.project.moneyj.codef.domain;
 
+import com.project.moneyj.common.BaseTimeEntity;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -11,7 +12,7 @@ import java.time.LocalDateTime;
 @Table(name = "codef_connected_id",
         indexes = {@Index(name="idx_user", columnList="user_id")},
         uniqueConstraints = {@UniqueConstraint(name="uk_connected_id", columnNames = "connected_id")})
-public class CodefConnectedId {
+public class CodefConnectedId extends BaseTimeEntity {
 
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name="codef_connected_id", nullable=false)
@@ -26,10 +27,6 @@ public class CodefConnectedId {
     @Column(name="status", length=20)
     private String status; // ACTIVE/INACTIVE
 
-    @Column(name="created_at", updatable = false)
-    private LocalDateTime createdAt;
-    @Column(name="updated_at")
-    private LocalDateTime updatedAt;
 
     // === 생성자 (도메인 내부용) ===
     private CodefConnectedId(Long userId, String connectedId, String status){
@@ -45,10 +42,6 @@ public class CodefConnectedId {
 
 
     @PrePersist void prePersist() {
-        if (createdAt == null) createdAt = LocalDateTime.now();
-        if (updatedAt == null) updatedAt = LocalDateTime.now();
         if (status == null) status = "ACTIVE";
     }
-    @PreUpdate
-    void preUpdate() { updatedAt = LocalDateTime.now(); }
 }
