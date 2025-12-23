@@ -43,7 +43,6 @@ public class Transaction extends BaseTimeEntity {
     private String storeType;
     private String approvalNo;
 
-//    private LocalDateTime updateAt;
 
     // === 생성자 (도메인 내부용) ===
     @Builder(access = AccessLevel.PRIVATE)

@@ -22,6 +22,9 @@ public enum CodefErrorCode implements ErrorCode {
     CARD_LIST_FAILED(HttpStatus.BAD_REQUEST, "CF006", "CODEF 카드 목록 조회에 실패했습니다."),
     BANK_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "CF007", "연결된 계좌를 찾을 수 없습니다."),
 
+    // 401 UNAUTHORIZED
+    INVALID_CREDENTIALS(HttpStatus.UNAUTHORIZED, "CF011", "계좌 아이디 또는 비밀번호가 올바르지 않습니다."),
+
     // 500 INTERNAL_SERVER_ERROR (내부 처리 또는 CODEF 응답 오류)
     RESPONSE_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CF006", "CODEF 응답을 파싱(처리)하는데 실패했습니다."),
     EMPTY_RESPONSE(HttpStatus.INTERNAL_SERVER_ERROR, "CF007", "CODEF로부터 비어있는 응답을 받았습니다."),

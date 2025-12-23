@@ -32,29 +32,15 @@ import static org.mockito.Mockito.verify;
 class TripPlanServiceTest {
 
     @Mock
-    private UserRepository userRepository;
-
-    @Mock
     private CategoryRepository categoryRepository;
 
     @Mock
     private TripPlanRepository tripPlanRepository;
-    @Mock
-    private TripMemberRepository tripMemberRepository;
-    @Mock
-    private TripTipRepository tripTipRepository;
-    @Mock
-    private TripSavingPhraseRepository tripSavingPhraseRepository;
-
-    @Mock
-    private ChatClient chatClient;
 
     @Mock
     private AccountRepository accountRepository;
     @Mock
     private AccountService accountService;
-    @Mock
-    private TransactionSummaryService transactionSummaryService;
 
     @InjectMocks
     private TripPlanService tripService;

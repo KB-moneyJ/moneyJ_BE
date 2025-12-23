@@ -108,7 +108,6 @@ public class TripController implements TripControllerApiSpec{
     /**
      * 여행 플랜 탈퇴
      */
-    // TODO 아무도 없는 유령 플랜 삭제 로직 추가
     @Override
     @DeleteMapping("/{planId}")
     public ResponseEntity<TripPlanResponseDTO> leavePlan(
@@ -124,7 +123,7 @@ public class TripController implements TripControllerApiSpec{
     /**
      * 여행 멤버별 저축 금액 및 달성률
      * 마지막 동기화 < 3시간 -> DB에서 바로 금액 반환
-     * 마지막 동기화 >= 3시간: CODEF 비동기 호출
+     * 마지막 동기화 >= 3시간: CODEF 호출
      */
     @Override
     @GetMapping("/{tripPlanId}/balances")

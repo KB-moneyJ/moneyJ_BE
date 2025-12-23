@@ -49,15 +49,6 @@ public class CodefInstitution extends BaseTimeEntity {
     @Column(name = "last_result_msg", length = 255)
     private String lastResultMsg;
 
-//    // 생성 일시
-//    @CreationTimestamp
-//    @Column(name = "created_at", nullable = false, updatable = false)
-//    private LocalDateTime createdAt;
-//
-//    // 수정 일시
-//    @UpdateTimestamp
-//    @Column(name = "updated_at", nullable = false)
-//    private LocalDateTime updatedAt;
 
     // === 생성자 (도메인 내부용) ===
     @Builder(access =  AccessLevel.PRIVATE)

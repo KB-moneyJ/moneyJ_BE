@@ -2,12 +2,21 @@ package com.project.moneyj.trip.domain;
 
 import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.trip.dto.TripPlanPatchRequestDTO;
-import jakarta.persistence.*;
-import lombok.*;
-
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
@@ -120,11 +129,16 @@ public class TripPlan extends BaseTimeEntity {
     }
 
     public void updateTotalBudget(Integer amount){
-
         this.totalBudget += amount;
     }
+
     public void updateMembersCount(Integer membersCount){
         this.membersCount = membersCount;
+    }
+
+    public void removeMember(TripMember member) {
+        this.tripMemberList.remove(member);
+        this.membersCount = this.tripMemberList.size();
     }
 
 }

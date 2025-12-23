@@ -27,10 +27,6 @@ public class CodefConnectedId extends BaseTimeEntity {
     @Column(name="status", length=20)
     private String status; // ACTIVE/INACTIVE
 
-//    @Column(name="created_at", updatable = false)
-//    private LocalDateTime createdAt;
-//    @Column(name="updated_at")
-//    private LocalDateTime updatedAt;
 
     // === 생성자 (도메인 내부용) ===
     private CodefConnectedId(Long userId, String connectedId, String status){

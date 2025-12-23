@@ -119,6 +119,11 @@ public class CodefAccountService {
 
         // 2-way 인증 요구(CF-03002 등)는 프론트로 그대로 전달하고 종료
         if (!"CF-00000".equals(code)) {
+
+            if("CF-12803".equals(code)) {
+                //아이디 또는 비밀번호 오류
+                throw MoneyjException.of(CodefErrorCode.INVALID_CREDENTIALS);
+            }
             // 필요 시 세부 처리 로직 추가 (2Way OTP 등)
             throw MoneyjException.of(CodefErrorCode.REGISTRATION_FAILED);
         }
