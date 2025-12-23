@@ -1,27 +1,39 @@
 package com.project.moneyj.trip.service;
 
 
+import com.project.moneyj.account.domain.Account;
+import com.project.moneyj.account.repository.AccountRepository;
 import com.project.moneyj.account.service.AccountService;
 import com.project.moneyj.analysis.dto.MonthlySummaryDTO;
 import com.project.moneyj.analysis.service.TransactionSummaryService;
 import com.project.moneyj.exception.MoneyjException;
-import com.project.moneyj.exception.code.*;
+import com.project.moneyj.exception.code.CategoryErrorCode;
+import com.project.moneyj.exception.code.TripMemberErrorCode;
+import com.project.moneyj.exception.code.TripPlanErrorCode;
+import com.project.moneyj.exception.code.UserErrorCode;
 import com.project.moneyj.openai.util.PromptLoader;
-import com.project.moneyj.trip.domain.*;
-import com.project.moneyj.trip.dto.*;
-import com.project.moneyj.trip.repository.*;
-import com.project.moneyj.account.domain.Account;
-import com.project.moneyj.account.repository.AccountRepository;
+import com.project.moneyj.trip.domain.Category;
+import com.project.moneyj.trip.domain.MemberRole;
 import com.project.moneyj.trip.domain.TripMember;
 import com.project.moneyj.trip.domain.TripPlan;
+import com.project.moneyj.trip.domain.TripSavingPhrase;
+import com.project.moneyj.trip.dto.AddTripMemberRequestDTO;
+import com.project.moneyj.trip.dto.CategoryDTO;
+import com.project.moneyj.trip.dto.CategoryListRequestDTO;
+import com.project.moneyj.trip.dto.CategoryResponseDTO;
+import com.project.moneyj.trip.dto.SavingsTipResponseDTO;
+import com.project.moneyj.trip.dto.TripBudgetRequestDTO;
+import com.project.moneyj.trip.dto.TripBudgetResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanDetailResponseDTO;
+import com.project.moneyj.trip.dto.TripPlanListDTO;
 import com.project.moneyj.trip.dto.TripPlanListResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanPatchRequestDTO;
 import com.project.moneyj.trip.dto.TripPlanRequestDTO;
 import com.project.moneyj.trip.dto.TripPlanResponseDTO;
 import com.project.moneyj.trip.dto.UserBalanceResponseDTO;
-import com.project.moneyj.trip.dto.TripBudgetResponseDTO;
-import com.project.moneyj.trip.dto.TripBudgetRequestDTO;
+import com.project.moneyj.trip.dto.isConsumedRequestDTO;
+import com.project.moneyj.trip.dto.isConsumedResponseDTO;
+import com.project.moneyj.trip.repository.CategoryRepository;
 import com.project.moneyj.trip.repository.TripMemberRepository;
 import com.project.moneyj.trip.repository.TripPlanRepository;
 import com.project.moneyj.trip.repository.TripSavingPhraseRepository;
@@ -33,9 +45,13 @@ import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.YearMonth;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
@@ -112,15 +128,19 @@ public class TripPlanService {
     }
 
     /**
-     * 여행 플랜 조회
+     * 여행 플랜 리스트 조회
      */
     @Transactional(readOnly = true)
     public List<TripPlanListResponseDTO> getUserTripPlans(Long userId) {
 
-        List<TripPlan> tripPlan = tripPlanRepository.findAllByUserId(userId);
-        return tripPlan.stream()
-                .map(TripPlanListResponseDTO::fromEntity)
-                .toList();
+        List<TripPlanListDTO> tripPlans = tripPlanRepository.findAllWithProgress(userId);
+
+        return tripPlans.stream()
+            .map(tp -> {
+                double progress = calcProgress(tp.getTotalBalance(), tp.getTotalBudget() * tp.getMembersCount());
+                return TripPlanListResponseDTO.of(tp, progress);
+            })
+            .toList();
     }
 
     /**
@@ -257,8 +277,9 @@ public class TripPlanService {
     /**
      * 여행 멤버별 저축 금액 조회 및 업데이트
      * 마지막 동기화 < 3시간 -> DB에서 바로 금액 반환
-     * 마지막 동기화 >= 3시간: CODEF 비동기(syncAccountIfNeeded) 호출
+     * 마지막 동기화 >= 3시간: CODEF (syncAccountIfNeeded) 호출
      */
+    // TODO: 달성률 계산 부분 calcProgress 사용 고려
     @Transactional(readOnly = true)
     public UserBalanceResponseDTO getUserBalances(Long tripPlanId) {
 
@@ -553,5 +574,16 @@ public class TripPlanService {
         // 5. 네 조건이 모두 true일 때만 실행
         addSavingsTip(userId, planId);
     }
+
+
+    private double calcProgress(Long totalBalance, Integer budget) {
+        if (budget == null || budget <= 0) return 0.0;
+
+        double raw = (totalBalance * 100.0) / budget;
+        return BigDecimal.valueOf(raw)
+            .setScale(1, RoundingMode.HALF_UP)
+            .doubleValue();
+    }
+
 }
 
