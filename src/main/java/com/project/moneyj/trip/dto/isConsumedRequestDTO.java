@@ -1,13 +1,16 @@
 package com.project.moneyj.trip.dto;
 
+import javax.validation.constraints.NotNull;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
-
-import javax.validation.constraints.NotNull;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
 @AllArgsConstructor
 public class isConsumedRequestDTO {
 
@@ -18,5 +21,6 @@ public class isConsumedRequestDTO {
     private String categoryName;
 
     @NotNull
+    @JsonProperty("isConsumed")
     private boolean isConsumed;
 }

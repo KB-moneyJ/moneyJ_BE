@@ -1,4 +1,4 @@
-package com.project.moneyj.account.Service;
+package com.project.moneyj.account.service;
 
 import com.project.moneyj.account.domain.Account;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
@@ -14,16 +14,14 @@ import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.trip.repository.TripPlanRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 @Slf4j
 @Service
@@ -38,15 +36,15 @@ public class AccountService {
     @Transactional
     public AccountLinkResponseDTO linkUserAccount(Long userId, AccountLinkRequestDTO request) {
 
-        // 1. DB에서 이 사용자의 연동 계좌가 이미 있는지 찾아봅니다.
-        Optional<Account> existingAccountOpt = accountRepository.findByUser_UserId(userId);
+        // DB에서 이 사용자의 연동 계좌가 이미 있는지
+        Optional<Account> existingAccountOpt = accountRepository.findByAccountNumber(request.getAccountNumber());
 
         String orgCode = existingAccountOpt.isPresent() ? existingAccountOpt.get().getOrganizationCode() : request.getOrganizationCode();
         if (orgCode == null) {
             throw MoneyjException.of(CodefErrorCode.INITIAL_INSTITUTION_NOT_FOUND);
         }
 
-        // 2. CODEF API를 호출하여 최신 계좌 정보를 가져옵니다.
+        // CODEF API를 호출하여 최신 계좌 조회
         Map<String, Object> codefResponse = codefBankService.fetchBankAccounts(userId, orgCode);
         Map<String, Object> data = (Map<String, Object>) codefResponse.get("data");
         if (data == null || data.get("resDepositTrust") == null) {
@@ -56,17 +54,17 @@ public class AccountService {
 
         Account finalAccount;
 
-        // 3. DB 상태와 요청 내용을 바탕으로 시나리오를 분기합니다.
+        // DB 상태와 요청 내용 확인
         if (existingAccountOpt.isPresent()) {
             Account existingAccount = existingAccountOpt.get();
             String newAccountNumber = request.getAccountNumber();
 
-            // 3-1. 시나리오 B: 계좌 '변경' 요청 (DB에 계좌가 있고, 요청으로 다른 계좌번호가 들어옴)
+            // 계좌 '변경' 요청 (DB에 계좌가 있고, 요청으로 다른 계좌번호가 들어옴)
             if (newAccountNumber != null && !newAccountNumber.equals(existingAccount.getAccountNumber())) {
                 finalAccount = createOrUpdateAccount(userId, request, depositAccounts, Optional.of(existingAccount));
                 log.info("계좌를 새로운 계좌(accountNumber:{})로 변경했습니다.", newAccountNumber);
             } else {
-                // 3-2. 시나리오 A: 단순 잔액 '갱신' 요청 (DB에 계좌가 있고, 요청 계좌번호가 없거나 같음)
+                // 단순 잔액 '갱신' 요청 (DB에 계좌가 있고, 요청 계좌번호가 없거나 같음)
                 String currentAccountNumber = existingAccount.getAccountNumber();
                 Map<String, Object> currentAccountData = findAccountInList(depositAccounts, currentAccountNumber);
 
@@ -76,7 +74,7 @@ public class AccountService {
                 log.info("기존 계좌(accountNumber:{})의 잔액을 업데이트했습니다.", currentAccountNumber);
             }
         } else {
-            // 3-3. 시나리오 C: '최초 연동' 요청 (DB에 계좌가 없음)
+            // '최초 연동' 요청 (DB에 계좌가 없음)
             if (request.getAccountNumber() == null) {
                 throw MoneyjException.of(CodefErrorCode.INITIAL_BANK_ACCOUNT_NOT_FOUND);
             }
@@ -84,15 +82,16 @@ public class AccountService {
             log.info("새로운 계좌(accountNumber:{})를 연동했습니다.", request.getAccountNumber());
         }
 
-        // 4. 최종 결과를 DTO로 만들어 반환합니다.
+        // 4. 최종 결과를 DTO로 만들어 반환
         return AccountLinkResponseDTO.builder()
+                .accountId(finalAccount.getAccountId())
                 .accountName(finalAccount.getAccountName())
                 .accountNumberDisplay(maskAdvanced(finalAccount.getAccountNumber()))
                 .balance(finalAccount.getBalance())
                 .build();
     }
 
-    // 계좌 생성 또는 전체 업데이트를 처리하는 헬퍼 메서드 (시나리오 B, C)
+    // 계좌 생성 또는 전체 업데이트를 처리하는 메서드
     private Account createOrUpdateAccount(Long userId, AccountLinkRequestDTO request, List<Map<String, Object>> accountList, Optional<Account> accountOpt) {
         String targetAccountNumber = request.getAccountNumber();
         Map<String, Object> selectedAccountData = findAccountInList(accountList, targetAccountNumber);
@@ -101,7 +100,8 @@ public class AccountService {
         Optional<Account> existingByNumber = accountRepository.findByAccountNumber(targetAccountNumber);
         if (existingByNumber.isPresent()) {
             Account found = existingByNumber.get();
-            // 만약 기존 Account가 있을 때, 동일한 레코드를 업데이트하는 경우는 허용
+
+            // 만약 기존 계좌가 있을 때, 동일한 레코드를 업데이트하는 경우는 허용
             if (accountOpt.isEmpty() || !found.getAccountId().equals(accountOpt.get().getAccountId())) {
                 throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
             }
@@ -132,17 +132,75 @@ public class AccountService {
         }
     }
 
-    // 계좌 목록에서 특정 계좌번호를 찾는 헬퍼 메서드
+    // 계좌 목록에서 특정 계좌번호를 찾는 메서드
     private Map<String, Object> findAccountInList(List<Map<String, Object>> accountList, String accountNumber) {
+
+        String targetDigits = accountNumber.replaceAll("\\D", "");
+
         return accountList.stream()
-                .filter(acc -> accountNumber.equals(String.valueOf(acc.get("resAccount"))))
+                .filter(acc -> {
+                    String resAccount = String.valueOf(acc.get("resAccount"));
+                    // 비교 대상(목록의 계좌번호)에서도 숫자만 추출
+                    String resDigits = resAccount.replaceAll("\\D", "");
+                    return targetDigits.equals(resDigits);
+                })
                 .findFirst()
                 .orElseThrow(() -> MoneyjException.of(
                         AccountErrorCode.ACCOUNT_NOT_FOUND,
                         AccountErrorCode.ACCOUNT_NOT_FOUND.format(maskAdvanced(accountNumber))));
     }
 
-    // 예시: "1234-****-5678" 형태로 마스킹
+    /**
+     * 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
+     */
+    @Transactional
+    public void syncAccountIfNeeded(Account account) {
+
+        Long userId = account.getUser().getUserId();
+        String orgCode = account.getOrganizationCode();
+        String accountNumber = account.getAccountNumber();
+
+        if (orgCode == null || accountNumber == null) {
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        // CODEF API 호출
+        Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
+
+        Map<String, Object> data = (Map<String, Object>) res.get("data");
+        if (data == null || data.get("resDepositTrust") == null) {
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        List<Map<String, Object>> accountsFromCodef = (List<Map<String, Object>>) data.get("resDepositTrust");
+
+        // 현재 Account와 매칭되는 CODEF 계좌 찾아서 업데이트
+        accountsFromCodef.stream()
+                .filter(m -> accountNumber.equals(String.valueOf(m.get("resAccount"))))
+                .findFirst()
+                .ifPresent(map -> {
+
+                    long balanceLong = Long.parseLong(String.valueOf(map.get("resAccountBalance")));
+                    account.updateBalance((int) balanceLong);
+                });
+    }
+
+    @Transactional
+    public AccountLinkResponseDTO manualAccount(Long accId) {
+        Account account = accountRepository.findById(accId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+
+        syncAccountIfNeeded(account);
+
+        return AccountLinkResponseDTO.builder()
+                .accountId(account.getAccountId())
+                .accountName(account.getAccountName())
+                .accountNumberDisplay(maskAdvanced(account.getAccountNumber()))
+                .balance(account.getBalance())
+                .build();
+    }
+
+    // "1234-****-5678" 형태로 마스킹
     public static String maskAdvanced(String accountNumber) {
         if (accountNumber == null || accountNumber.length() < 8) {
             return accountNumber; // 너무 짧으면 마스킹하지 않음
@@ -151,16 +209,24 @@ public class AccountService {
         String lastPart = accountNumber.substring(accountNumber.length() - 4);
         return firstPart + "****" + lastPart;
     }
+
     @Transactional(readOnly = true)
     public Integer getUserBalance(Long userId) {
         return accountRepository.findByUser_UserId(userId)
                 .map(Account::getBalance)
-                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.USER_ACCOUNT_NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
     public boolean checkAccountOwnership(String accountNumber) {
-
         return accountRepository.findByAccountNumber(accountNumber).isPresent();
+    }
+
+    @Transactional
+    public void deleteAccount(Long accountId) {
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
+
+        accountRepository.delete(account);
     }
 }

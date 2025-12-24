@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TransactionSummaryController implements TransactionSummaryControllerApiSpec {
     private final TransactionSummaryService transactionSummaryService;
 
+    @Override
     @GetMapping()
     public ResponseEntity<SummaryResponseDTO> getRecent6MonthsSummary(
         @RequestParam(required = false) String base, // /summary?base=2025-09
@@ -33,6 +34,7 @@ public class TransactionSummaryController implements TransactionSummaryControlle
         );
     }
 
+    @Override
     @GetMapping("/category")
     public ResponseEntity<CategorySummaryDTO> getMonthlyCategorySummary(
         @AuthenticationPrincipal CustomOAuth2User customUser,
