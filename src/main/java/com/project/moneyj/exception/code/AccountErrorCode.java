@@ -12,7 +12,9 @@ public enum AccountErrorCode implements ErrorCode {
     ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "ACC-001", "해당 계좌(%s)를 목록에서 찾을 수 없습니다."),
     USER_ACCOUNT_NOT_FOUND(HttpStatus.NOT_FOUND, "ACC-002", "해당 유저의 계좌가 존재하지 않습니다."),
     ACCOUNT_ALREADY_IN_USE(HttpStatus.NOT_FOUND, "ACC-003", "이미 해당 계좌가 사용 중입니다."),
-    NOT_FOUND(HttpStatus.NOT_FOUND, "ACC-004", "계좌를 찾을 수 없습니다.");
+    NOT_FOUND(HttpStatus.NOT_FOUND, "ACC-004", "계좌를 찾을 수 없습니다."),
+    ACCESS_DENIED(HttpStatus.NOT_FOUND, "ACC-005", "본인 계좌만 변경하실 수 있습니다."),
+    INVALID_ACCOUNT_FORMAT(HttpStatus.NOT_FOUND, "ACC-006", "잘못된 계좌 형식입니다.");
 
     private final HttpStatus httpStatus;
     private final String code;
