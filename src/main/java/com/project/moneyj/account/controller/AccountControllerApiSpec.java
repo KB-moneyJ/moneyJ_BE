@@ -2,6 +2,7 @@ package com.project.moneyj.account.controller;
 
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
 import com.project.moneyj.account.dto.AccountLinkResponseDTO;
+import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -12,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "Accounts", description = "여행 플랜 계좌 API")
 public interface AccountControllerApiSpec {
@@ -24,6 +26,17 @@ public interface AccountControllerApiSpec {
     ResponseEntity<AccountLinkResponseDTO> linkAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody AccountLinkRequestDTO request
+    );
+
+    @Operation(summary = "계좌 변경", description = "사용자 계좌를 변경합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "201", description = "계좌 변경 성공"),
+            @ApiResponse(responseCode = "400", description = "잘못된 요청")
+    })
+    ResponseEntity<AccountLinkResponseDTO> switchAccount(
+            @AuthenticationPrincipal CustomOAuth2User customUser,
+            @PathVariable Long accountId,
+            @RequestBody AccountSwitchRequestDTO accountSwitchRequestDTO
     );
 
     @Operation(

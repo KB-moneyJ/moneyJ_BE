@@ -2,20 +2,16 @@ package com.project.moneyj.account.controller;
 
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
 import com.project.moneyj.account.dto.AccountLinkResponseDTO;
+import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.account.service.AccountService;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
 import com.project.moneyj.trip.dto.UserBalanceResponseDTO;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -37,6 +33,21 @@ public class AccountController implements AccountControllerApiSpec{
         // 서비스로부터 DTO를 직접 받음
         AccountLinkResponseDTO responseDto = accountService.linkUserAccount(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
+    }
+
+    /**
+     * 계좌 변경
+     */
+    @Override
+    @PatchMapping("switch/{accountId}")
+    public ResponseEntity<AccountLinkResponseDTO> switchAccount(
+            @AuthenticationPrincipal CustomOAuth2User customUser,
+            @PathVariable Long accountId,
+            @Valid @RequestBody AccountSwitchRequestDTO accountSwitchRequestDTO
+            ) {
+
+        Long userId = customUser.getUserId();
+        return ResponseEntity.ok(accountService.switchAccount(userId, accountId, accountSwitchRequestDTO));
     }
 
     /**
@@ -66,10 +77,10 @@ public class AccountController implements AccountControllerApiSpec{
      * 계좌 수동 업데이트 및 조회
      */
     @Override
-    @GetMapping("/{accId}")
+    @GetMapping("/{accountId}")
     public ResponseEntity<AccountLinkResponseDTO> manualAccountUpdate(
-            @PathVariable Long accId
+            @PathVariable Long accountId
     ){
-        return ResponseEntity.ok(accountService.manualAccount(accId));
+        return ResponseEntity.ok(accountService.manualAccount(accountId));
     }
 }
