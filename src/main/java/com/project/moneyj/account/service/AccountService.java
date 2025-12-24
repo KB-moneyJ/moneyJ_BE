@@ -161,7 +161,7 @@ public class AccountService {
         String accountNumber = account.getAccountNumber();
 
         if (orgCode == null || accountNumber == null) {
-            return;
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND);
         }
 
         // CODEF API 호출
@@ -169,7 +169,7 @@ public class AccountService {
 
         Map<String, Object> data = (Map<String, Object>) res.get("data");
         if (data == null || data.get("resDepositTrust") == null) {
-            return;
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND);
         }
 
         List<Map<String, Object>> accountsFromCodef = (List<Map<String, Object>>) data.get("resDepositTrust");
@@ -183,6 +183,21 @@ public class AccountService {
                     long balanceLong = Long.parseLong(String.valueOf(map.get("resAccountBalance")));
                     account.updateBalance((int) balanceLong);
                 });
+    }
+
+    @Transactional
+    public AccountLinkResponseDTO manualAccount(Long accId) {
+        Account account = accountRepository.findById(accId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+
+        syncAccountIfNeeded(account);
+
+        return AccountLinkResponseDTO.builder()
+                .accountId(account.getAccountId())
+                .accountName(account.getAccountName())
+                .accountNumberDisplay(maskAdvanced(account.getAccountNumber()))
+                .balance(account.getBalance())
+                .build();
     }
 
     // "1234-****-5678" 형태로 마스킹
@@ -210,7 +225,7 @@ public class AccountService {
     @Transactional
     public void deleteAccount(Long accountId) {
         Account account = accountRepository.findById(accountId)
-            .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
 
         accountRepository.delete(account);
     }
