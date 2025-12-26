@@ -99,6 +99,8 @@ public class Account extends BaseTimeEntity {
         this.balance = balance;
     }
 
+    public void switchAccountNumber(String accountNumber){this.accountNumber = accountNumber;}
+
     public boolean isStale(Duration threshold, Clock clock){
 
         Instant now = Instant.now(clock);
