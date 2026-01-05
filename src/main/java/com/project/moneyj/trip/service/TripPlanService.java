@@ -433,7 +433,8 @@ public class TripPlanService {
         TripMember tripMember = tripMemberRepository.findByTripPlanAndUser(tripPlan, user)
                 .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
-        List<Category> categoriesList = categoryRepository.findByTripPlanIdAndTripMemberId(planId, userId);
+        List<Category> categoriesList = categoryRepository.findByTripPlanIdAndTripMemberId(planId, tripMember.getTripMemberId());
+        System.out.println("카테고리: " + categoriesList);
 
         return categoriesList.stream().map(category -> CategoryDTO.fromEntity(category, planId)).toList();
     }
