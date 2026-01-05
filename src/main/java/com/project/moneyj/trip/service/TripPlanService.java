@@ -38,6 +38,7 @@ import com.project.moneyj.trip.repository.TripMemberRepository;
 import com.project.moneyj.trip.repository.TripPlanRepository;
 import com.project.moneyj.trip.repository.TripSavingPhraseRepository;
 import com.project.moneyj.trip.repository.TripTipRepository;
+import com.project.moneyj.trip.repository.query.TripPlanQuerydslRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import java.math.BigDecimal;
@@ -69,6 +70,7 @@ public class TripPlanService {
     private final CategoryRepository categoryRepository;
 
     private final TripPlanRepository tripPlanRepository;
+    private final TripPlanQuerydslRepository tripPlanQuerydslRepository;
     private final TripMemberRepository tripMemberRepository;
     private final TripTipRepository tripTipRepository;
     private final TripSavingPhraseRepository tripSavingPhraseRepository;
@@ -133,7 +135,7 @@ public class TripPlanService {
     @Transactional(readOnly = true)
     public List<TripPlanListResponseDTO> getUserTripPlans(Long userId) {
 
-        List<TripPlanListDTO> tripPlans = tripPlanRepository.findAllWithProgress(userId);
+        List<TripPlanListDTO> tripPlans = tripPlanQuerydslRepository.findAllWithProgress(userId);
 
         return tripPlans.stream()
             .map(tp -> {
