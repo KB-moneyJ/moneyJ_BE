@@ -20,4 +20,6 @@ public interface CardRepository extends JpaRepository<Card, Long> {
 
     // 특정 사용자가 특정 카드번호를 이미 등록했는지 확인
     Optional<Card> findByUserAndCardNo(User user, String cardNo);
+
+    List<Card> findAllByUser(User user);
 }
