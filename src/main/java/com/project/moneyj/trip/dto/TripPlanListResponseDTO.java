@@ -24,7 +24,7 @@ public class TripPlanListResponseDTO {
     private Integer memberCount;
     private double groupProgress;
 
-    public static TripPlanListResponseDTO of(TripPlanListDTO tripPlan, double progress){
+    public static TripPlanListResponseDTO of(TripPlanQueryDTO tripPlan, double progress){
         return new TripPlanListResponseDTO(
             tripPlan.getPlanId(),
             tripPlan.getCountry(),

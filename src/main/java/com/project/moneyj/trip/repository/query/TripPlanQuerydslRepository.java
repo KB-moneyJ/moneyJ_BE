@@ -6,8 +6,8 @@ import static com.project.moneyj.trip.domain.QTripMember.tripMember;
 import static com.project.moneyj.trip.domain.QTripPlan.tripPlan;
 import static com.querydsl.core.types.dsl.Expressions.asNumber;
 
-import com.project.moneyj.trip.dto.QTripPlanListDTO;
-import com.project.moneyj.trip.dto.TripPlanListDTO;
+import com.project.moneyj.trip.dto.QTripPlanQueryDTO;
+import com.project.moneyj.trip.dto.TripPlanQueryDTO;
 import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
@@ -21,7 +21,7 @@ public class TripPlanQuerydslRepository {
 
     private final JPAQueryFactory jpaQueryFactory;
 
-    public List<TripPlanListDTO> findAllWithProgress(Long userId) {
+    public List<TripPlanQueryDTO> findAllWithProgress(Long userId) {
 
         NumberExpression<Long> accountSum = asNumber(
             JPAExpressions.select(account.balance.sum().longValue().coalesce(0L))
@@ -36,7 +36,7 @@ public class TripPlanQuerydslRepository {
         );
 
         return jpaQueryFactory
-            .select(new QTripPlanListDTO(
+            .select(new QTripPlanQueryDTO(
                 tripPlan.tripPlanId,
                 tripPlan.country,
                 tripPlan.countryCode,

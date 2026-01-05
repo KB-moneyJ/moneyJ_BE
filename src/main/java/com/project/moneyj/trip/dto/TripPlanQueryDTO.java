@@ -7,7 +7,7 @@ import lombok.Data;
 
 @Data
 @AllArgsConstructor
-public class TripPlanListDTO {
+public class TripPlanQueryDTO {
     private Long planId;
     private String country;
     private String countryCode;
@@ -20,7 +20,7 @@ public class TripPlanListDTO {
 
 
     @QueryProjection
-    public TripPlanListDTO(
+    public TripPlanQueryDTO(
         Long planId,
         String country,
         String countryCode,
