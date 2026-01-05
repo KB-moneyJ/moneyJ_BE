@@ -498,14 +498,26 @@ public class TripPlanService {
         String baseYearMonth = YearMonth.now().toString(); // 예: "2025-09"
         List<MonthlySummaryDTO> summaries = transactionSummaryService.getMonthlySummary(userId, baseYearMonth);
 
-        // 카테고리별 합산 (Map<Category, TotalAmount>)
+        // 4. TripMember 조회
+        TripMember tripMember = tripMemberRepository.findByUserIdAndPlanId(userId, planId)
+                .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
+
+        // 소비내역 요약이 없을 경우 기본값 저장
+        if(summaries == null || summaries.isEmpty()) {
+            TripSavingPhrase phrase = TripSavingPhrase.of(
+                    tripMember,
+                    "카드에 소비내역이 없어서 저축 팁을 생성하지 못했어요. 나중에 다시 확인해 보세요!"
+            );
+
+            tripSavingPhraseRepository.save(phrase);
+            return;
+        }
+
         Map<String, Integer> categoryTotals = new HashMap<>();
-        Map<String, Integer> categoryCounts = new HashMap<>();
 
         for (MonthlySummaryDTO monthSummary : summaries) {
             for (MonthlySummaryDTO.CategorySummaryDTO cat : monthSummary.getCategories()) {
                 categoryTotals.merge(cat.getCategory(), cat.getTotalAmount(), Integer::sum);
-                categoryCounts.merge(cat.getCategory(), cat.getTransactionCount(), Integer::sum);
             }
         }
 
@@ -523,7 +535,7 @@ public class TripPlanService {
                 .map(e -> String.format("%s : %d", e.getKey(), e.getValue()))
                 .collect(Collectors.joining("\n"));
 
-        // 4. 프롬프트 작성
+        // 5. 프롬프트 작성
         String promptTemplate = PromptLoader.load("/prompts/savings-tip.txt");
         String promptText = String.format(
                 promptTemplate,
@@ -532,7 +544,7 @@ public class TripPlanService {
                 transactionSummary // 6개월 평균 소비 내역
         );
 
-        // 5. GPT 호출
+        // 6. GPT 호출
         SavingsTipResponseDTO response = chatClient
                 .prompt()
                 .system("너는 저축 조언 전문가야. " +
@@ -542,9 +554,6 @@ public class TripPlanService {
                 .call()
                 .entity(SavingsTipResponseDTO.class);
 
-        // 6. TripMember 조회 후 DB 저장
-        TripMember tripMember = tripMemberRepository.findByUserIdAndPlanId(userId, planId)
-                .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
         for (String tip : response.getMessages()) {
             TripSavingPhrase phrase = TripSavingPhrase.of(tripMember, tip);
@@ -569,7 +578,7 @@ public class TripPlanService {
         }
 
         // 3. 계좌 확인
-       if (!accountRepository.findByUserIdAndTripPlanId(userId, planId).isPresent()){
+       if (accountRepository.findByUserIdAndTripPlanId(userId, planId).isEmpty()){
            return;
        }
 
@@ -582,6 +591,41 @@ public class TripPlanService {
 
         // 5. 네 조건이 모두 true일 때만 실행
         addSavingsTip(userId, planId);
+    }
+
+    @Transactional
+    //Todo : updateSavingsTip, checkSavingsTip(트랜잭션 잠금용) 코드 중복 정리
+    public void updateSavingsTip(Long userId, Long planId) {
+        if (!tripMemberRepository.existsMemberByUserAndPlan(userId, planId)) {
+            return;
+        }
+
+        if (accountRepository.findByUserIdAndTripPlanId(userId, planId).isEmpty()){
+            return;
+        }
+
+        if (!userRepository.findByUserId(userId)
+                .map(User::isCardConnected)
+                .orElse(false)){
+            return;
+        }
+
+        addSavingsTip(userId, planId);
+    }
+
+    @Transactional
+    public void updateAllMemberSavingTip(){
+        List<TripMember> members = tripMemberRepository.findAll();
+
+        for(TripMember member : members){
+          Long memberId = member.getUser().getUserId();
+          Long planId = member.getTripPlan().getTripPlanId();
+
+          tripSavingPhraseRepository.deleteByTripMember_TripMemberId(member.getTripMemberId());
+
+          updateSavingsTip(memberId, planId);
+        }
+
     }
 
 
