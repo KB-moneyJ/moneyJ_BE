@@ -1,5 +1,8 @@
 package com.project.moneyj.transaction.service;
 
+import com.project.moneyj.analysis.service.TransactionSummaryService;
+import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
+import com.project.moneyj.codef.service.CodefCardService;
 import com.project.moneyj.transaction.domain.Transaction;
 import com.project.moneyj.transaction.repository.TransactionRepository;
 import com.project.moneyj.user.domain.User;
@@ -15,14 +18,21 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TransactionService {
     private final TransactionRepository transactionRepository;
+    private final CodefCardService codefCardService;
+    private final TransactionSummaryService transactionSummaryService;
 
     @Transactional
     public void saveTransactions(User user, List<Map<String, Object>> data) {
-        List<Transaction> transactions = data.stream()
-            .map(raw -> toTransaction(raw, user))
-            .toList();
+        saveAndReturnTransactions(user, data);
+    }
 
+    @Transactional
+    public List<Transaction> saveAndReturnTransactions(User user, List<Map<String, Object>> data) {
+        List<Transaction> transactions = data.stream()
+                .map(raw -> toTransaction(raw, user))
+                .toList();
         transactionRepository.saveAll(transactions);
+        return transactions;
     }
 
     public Transaction toTransaction(Map<String, Object> raw, User user) {
@@ -66,5 +76,30 @@ public class TransactionService {
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    @Transactional
+    public void updateWeeklyTransactions(User user, CardApprovalRequestDTO req) {
+
+        Map<String, Object> response = codefCardService.getCardApprovalList(user.getUserId(), req);
+
+        Object rawData = response.get("data");
+
+        List<Map<String, Object>> data;
+
+        if (rawData instanceof List<?> list) {
+            data = (List<Map<String, Object>>) list;
+        } else if (rawData instanceof Map<?, ?> map) {
+            data = List.of((Map<String, Object>) map);
+        } else {
+            data = List.of();
+        }
+
+        if (data.isEmpty()) {
+            return; // 이번 주에 거래가 없다면 종료
+        }
+        List<Transaction> newTransactions = saveAndReturnTransactions(user, data);
+
+        transactionSummaryService.updateCurrentMonthSummary(user.getUserId(), newTransactions);
     }
 }
