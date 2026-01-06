@@ -39,7 +39,7 @@ public class AccountController implements AccountControllerApiSpec{
      * 계좌 변경
      */
     @Override
-    @PatchMapping("switch/{accountId}")
+    @PatchMapping("/switch/{accountId}")
     public ResponseEntity<AccountLinkResponseDTO> switchAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @PathVariable Long accountId,
