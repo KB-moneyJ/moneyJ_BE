@@ -3,6 +3,7 @@ package com.project.moneyj.account.service;
 import com.project.moneyj.account.domain.Account;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
 import com.project.moneyj.account.dto.AccountLinkResponseDTO;
+import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.account.repository.AccountRepository;
 import com.project.moneyj.codef.service.CodefBankService;
 import com.project.moneyj.exception.MoneyjException;
@@ -150,9 +151,7 @@ public class AccountService {
                         AccountErrorCode.ACCOUNT_NOT_FOUND.format(maskAdvanced(accountNumber))));
     }
 
-    /**
-     * 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
-     */
+    // 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
     @Transactional
     public void syncAccountIfNeeded(Account account) {
 
@@ -191,6 +190,27 @@ public class AccountService {
                 .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
         syncAccountIfNeeded(account);
+
+        return AccountLinkResponseDTO.builder()
+                .accountId(account.getAccountId())
+                .accountName(account.getAccountName())
+                .accountNumberDisplay(maskAdvanced(account.getAccountNumber()))
+                .balance(account.getBalance())
+                .build();
+    }
+
+    // 계좌 변경
+    @Transactional
+    public AccountLinkResponseDTO switchAccount(Long userId, Long accountId, AccountSwitchRequestDTO requestDTO){
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+
+        if (!account.getUser().getUserId().equals(userId)) {
+            throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
+        }
+
+        account.switchAccountNumber(requestDTO.getAccountNumber());
 
         return AccountLinkResponseDTO.builder()
                 .accountId(account.getAccountId())
