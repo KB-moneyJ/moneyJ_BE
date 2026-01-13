@@ -1,4 +1,4 @@
-package com.project.moneyj.trip;
+package com.project.moneyj.trip.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.BDDMockito.any;
@@ -14,7 +14,6 @@ import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.trip.dto.TripPlanResponseDTO;
 import com.project.moneyj.trip.repository.TripMemberRepository;
 import com.project.moneyj.trip.repository.TripPlanRepository;
-import com.project.moneyj.trip.service.TripPlanService;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import java.util.ArrayList;
@@ -28,7 +27,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
-public class TripPlanServiceTest {
+public class TripPlanMemberServiceTest {
 
     @Mock
     private UserRepository userRepository;

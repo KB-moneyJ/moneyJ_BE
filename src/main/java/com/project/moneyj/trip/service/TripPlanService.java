@@ -25,9 +25,9 @@ import com.project.moneyj.trip.dto.SavingsTipResponseDTO;
 import com.project.moneyj.trip.dto.TripBudgetRequestDTO;
 import com.project.moneyj.trip.dto.TripBudgetResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanDetailResponseDTO;
-import com.project.moneyj.trip.dto.TripPlanListDTO;
 import com.project.moneyj.trip.dto.TripPlanListResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanPatchRequestDTO;
+import com.project.moneyj.trip.dto.TripPlanQueryDTO;
 import com.project.moneyj.trip.dto.TripPlanRequestDTO;
 import com.project.moneyj.trip.dto.TripPlanResponseDTO;
 import com.project.moneyj.trip.dto.UserBalanceResponseDTO;
@@ -38,6 +38,7 @@ import com.project.moneyj.trip.repository.TripMemberRepository;
 import com.project.moneyj.trip.repository.TripPlanRepository;
 import com.project.moneyj.trip.repository.TripSavingPhraseRepository;
 import com.project.moneyj.trip.repository.TripTipRepository;
+import com.project.moneyj.trip.repository.query.TripPlanQuerydslRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import java.math.BigDecimal;
@@ -69,6 +70,7 @@ public class TripPlanService {
     private final CategoryRepository categoryRepository;
 
     private final TripPlanRepository tripPlanRepository;
+    private final TripPlanQuerydslRepository tripPlanQuerydslRepository;
     private final TripMemberRepository tripMemberRepository;
     private final TripTipRepository tripTipRepository;
     private final TripSavingPhraseRepository tripSavingPhraseRepository;
@@ -133,7 +135,7 @@ public class TripPlanService {
     @Transactional(readOnly = true)
     public List<TripPlanListResponseDTO> getUserTripPlans(Long userId) {
 
-        List<TripPlanListDTO> tripPlans = tripPlanRepository.findAllWithProgress(userId);
+        List<TripPlanQueryDTO> tripPlans = tripPlanQuerydslRepository.findAllWithProgress(userId);
 
         return tripPlans.stream()
             .map(tp -> {
@@ -431,7 +433,7 @@ public class TripPlanService {
         TripMember tripMember = tripMemberRepository.findByTripPlanAndUser(tripPlan, user)
                 .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
-        List<Category> categoriesList = categoryRepository.findByTripPlanIdAndTripMemberId(planId, userId);
+        List<Category> categoriesList = categoryRepository.findByTripPlanIdAndTripMemberId(planId, tripMember.getTripMemberId());
 
         return categoriesList.stream().map(category -> CategoryDTO.fromEntity(category, planId)).toList();
     }
