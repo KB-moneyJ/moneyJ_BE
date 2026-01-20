@@ -1,12 +1,15 @@
 package com.project.moneyj.account.controller;
 
+import com.project.moneyj.account.dto.AccountInfoDTO;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
 import com.project.moneyj.account.dto.AccountLinkResponseDTO;
 import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.account.service.AccountService;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.trip.dto.UserBalanceResponseDTO;
+import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
+import com.project.moneyj.codef.service.CodefBankService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,13 +18,45 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/accounts")
+@RequestMapping("/api/accounts")
 public class AccountController implements AccountControllerApiSpec{
 
     private final AccountService accountService;
+    private final CodefBankService codefBankService;
 
     /**
-     * 사용자가 선택한 계좌를 저장.
+     * 은행 계좌 목록 조회 (단순 조회용)
+     * 새로고침 등으로 계좌 목록만 다시 불러오고 싶을 때 사용
+     */
+    @Override
+    @GetMapping("/list")
+    public ResponseEntity<?> getAccountList(
+            @AuthenticationPrincipal CustomOAuth2User customUser,
+            @RequestParam String organization) {
+
+        Long userId = customUser.getUserId();
+        return ResponseEntity.ok(codefBankService.fetchBankAccounts(userId, organization));
+    }
+
+    /**
+     * 은행 계좌 목록 조회 및 기관 연결
+     * CODEF를 통해 기관(은행/카드사)에 연결하고, 성공 시 해당 기관의 계좌 목록을 반환
+     * 최초 등록시 커넥티드 ID 발급
+     */
+    @Override
+    @PostMapping("/connect")
+    public ResponseEntity<List<AccountInfoDTO>> connectAndFetchAccounts(
+        @AuthenticationPrincipal CustomOAuth2User customUser,
+        @RequestBody CredentialCreateRequestDTO.CredentialInput request) {
+
+        Long userId = customUser.getUserId();
+        List<AccountInfoDTO> accounts = accountService.connectInstitutionAndFetchAccounts(userId, request);
+        return ResponseEntity.ok(accounts);
+    }
+
+    /**
+     * 사용자가 선택한 은행 계좌를 저장
+     * 여행별 선택한 계좌를 DB에 저장
      */
     @Override
     @PostMapping("/link")

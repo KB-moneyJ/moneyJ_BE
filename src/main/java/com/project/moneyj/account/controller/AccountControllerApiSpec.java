@@ -1,14 +1,17 @@
 package com.project.moneyj.account.controller;
 
+import com.project.moneyj.account.dto.AccountInfoDTO;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
 import com.project.moneyj.account.dto.AccountLinkResponseDTO;
 import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
+import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +20,24 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "Accounts", description = "여행 플랜 계좌 API")
 public interface AccountControllerApiSpec {
+
+    @Operation(summary = "은행 계좌 목록 조회", description = "특정 기관(은행)의 계좌 목록을 조회합니다.")
+    ResponseEntity<?> getAccountList(
+            @AuthenticationPrincipal CustomOAuth2User customUser,
+            @Parameter(description = "조회할 기관 코드") @RequestParam String organization
+    );
+
+    @Operation(summary = "기관 연결 및 계좌 목록 조회", description = "CODEF를 통해 기관(은행/카드사)에 연결하고, 성공 시 해당 기관의 계좌 목록을 반환합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "기관 연결 및 계좌 목록 조회 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청 또는 CODEF 비즈니스 오류"),
+        @ApiResponse(responseCode = "401", description = "인증 실패"),
+        @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    ResponseEntity<List<AccountInfoDTO>> connectAndFetchAccounts(
+        @AuthenticationPrincipal CustomOAuth2User customUser,
+        @RequestBody CredentialCreateRequestDTO.CredentialInput request
+    );
 
     @Operation(summary = "여행별 선택한 계좌를 DB에 저장", description = "사용자가 선택한 계좌를 DB에 저장합니다.")
     @ApiResponses(value = {
