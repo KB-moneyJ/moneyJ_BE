@@ -11,8 +11,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AccountAddRequestDTO {
+public class CredentialAddRequestDTO {
 
     private String connectedId; // 서버에서 userId로 조회해서 넣어도 됨
-    private List<AccountCreateRequestDTO.AccountInput> accountList;
+    private List<CredentialCreateRequestDTO.CredentialInput> accountList;
 }
