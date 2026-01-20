@@ -2,11 +2,13 @@ package com.project.moneyj.account.dto;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
+@AllArgsConstructor
 public class AccountSwitchRequestDTO {
 
     @NotBlank(message = "계좌번호는 필수 입력입니다.")
