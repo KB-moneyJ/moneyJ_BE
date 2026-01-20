@@ -487,7 +487,7 @@ public class TripPlanService {
         }
 
         // 1. 현재 저축 금액 조회
-        int currentSavings = accountService.getUserBalance(userId);
+        int currentSavings = accountService.getUserBalance(userId, planId);
 
         // 2. 여행 플랜 예산 조회 (목표 저축 금액)
         TripPlan tripPlan = tripPlanRepository.findById(planId)
@@ -637,6 +637,5 @@ public class TripPlanService {
             .setScale(1, RoundingMode.HALF_UP)
             .doubleValue();
     }
-
 }
 
