@@ -11,7 +11,9 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AccountLinkRequestDTO {
 
+    private Long tripPlanId;
     private String organizationCode;
     private String accountNumber;
-    private Long tripPlanId;
+    private String accountName;
+    private Integer balance;
 }
