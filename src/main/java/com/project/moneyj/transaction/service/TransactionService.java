@@ -22,12 +22,8 @@ public class TransactionService {
     private final TransactionSummaryService transactionSummaryService;
 
     @Transactional
-    public void saveTransactions(User user, List<Map<String, Object>> data) {
-        saveAndReturnTransactions(user, data);
-    }
-
-    @Transactional
-    public List<Transaction> saveAndReturnTransactions(User user, List<Map<String, Object>> data) {
+    public List<Transaction> saveTransactions(User user, List<Map<String, Object>> data)
+    {
         List<Transaction> transactions = data.stream()
                 .map(raw -> toTransaction(raw, user))
                 .toList();
@@ -98,7 +94,7 @@ public class TransactionService {
         if (data.isEmpty()) {
             return; // 이번 주에 거래가 없다면 종료
         }
-        List<Transaction> newTransactions = saveAndReturnTransactions(user, data);
+        List<Transaction> newTransactions = saveTransactions(user, data);
 
         transactionSummaryService.updateCurrentMonthSummary(user.getUserId(), newTransactions);
     }

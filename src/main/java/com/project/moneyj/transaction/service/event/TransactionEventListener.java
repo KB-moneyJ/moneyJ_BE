@@ -3,6 +3,7 @@ package com.project.moneyj.transaction.service.event;
 
 import com.project.moneyj.analysis.service.TransactionSummaryService;
 import com.project.moneyj.codef.service.CodefCardService;
+import com.project.moneyj.transaction.domain.Transaction;
 import com.project.moneyj.transaction.domain.event.TransactionRequestEvent;
 import com.project.moneyj.transaction.service.TransactionService;
 import com.project.moneyj.user.domain.User;
@@ -46,7 +47,7 @@ public class TransactionEventListener {
         }
 
         // 거래 DB 저장 (트랜잭션)
-        transactionService.saveTransactions(user, data);
+        List<Transaction> transactions = transactionService.saveTransactions(user, data);
 
         // 요약 DB 저장 (트랜잭션)
         transactionSummaryService.initialize6MonthsSummary(user.getUserId());
