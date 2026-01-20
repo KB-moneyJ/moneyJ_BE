@@ -1,10 +1,10 @@
-package com.project.moneyj.scheduler;
+package com.project.moneyj.transaction;
 
 import com.project.moneyj.card.domain.Card;
 import com.project.moneyj.card.repository.CardRepository;
 import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
-import com.project.moneyj.scheduler.card.CardWeeklyScheduler;
 import com.project.moneyj.transaction.service.TransactionService;
+import com.project.moneyj.transaction.service.TransactionSyncScheduler;
 import com.project.moneyj.user.domain.Role;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
@@ -19,13 +19,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class CardWeeklySchedulerTest {
+class TransactionSchedulerTest {
 
     @Mock
     private TransactionService transactionService;
@@ -37,7 +36,7 @@ class CardWeeklySchedulerTest {
     private CardRepository cardRepository;
 
     @InjectMocks
-    private CardWeeklyScheduler scheduler;
+    private TransactionSyncScheduler transactionSyncScheduler;
 
     @Test
     @DisplayName("카드가 연동된 여러 유저 목록으로 주간 거래내역 갱신을 호출한다")
@@ -73,7 +72,7 @@ class CardWeeklySchedulerTest {
                 .willReturn(List.of(card2));
 
         // when
-        scheduler.weeklySync();
+        transactionSyncScheduler.weeklySync();
 
         // then
         verify(transactionService, times(2))
