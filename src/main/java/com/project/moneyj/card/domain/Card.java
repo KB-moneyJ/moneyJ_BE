@@ -1,7 +1,6 @@
 package com.project.moneyj.card.domain;
 
 import com.project.moneyj.common.BaseTimeEntity;
-import com.project.moneyj.trip.domain.TripPlan;
 import com.project.moneyj.user.domain.User;
 import jakarta.persistence.*;
 import lombok.*;
@@ -22,24 +21,24 @@ public class Card extends BaseTimeEntity {
 
     private String cardNo;
 
-    private String cardPassword;
+    private String cardPassword; // Note: sensitive info, should be handled securely
 
-    private String organizationCode;
+    private String organization; // Renamed from organizationCode
 
     private String cardName;
 
     // === 생성자 (도메인 내부용) ===
-    @Builder(access = AccessLevel.PRIVATE)
+    @Builder // Changed to public access
     private Card(User user,
                  String cardNo,
                  String cardPassword,
-                 String organizationCode,
+                 String organization, // Renamed
                  String cardName) {
 
         this.user = user;
         this.cardNo = cardNo;
         this.cardPassword = cardPassword;
-        this.organizationCode = organizationCode;
+        this.organization = organization; // Renamed
         this.cardName = cardName;
     }
 
@@ -47,14 +46,14 @@ public class Card extends BaseTimeEntity {
     public static Card of(User user,
                           String cardNo,
                           String cardPassword,
-                          String organizationCode,
+                          String organization, // Renamed
                           String cardName) {
 
         return Card.builder()
                 .user(user)
                 .cardNo(cardNo)
                 .cardPassword(cardPassword)
-                .organizationCode(organizationCode)
+                .organization(organization) // Renamed
                 .cardName(cardName)
                 .build();
     }
@@ -62,6 +61,10 @@ public class Card extends BaseTimeEntity {
     // ==== 비즈니스 메서드 ====
     public void setCardName(String cardName){
         this.cardName = cardName;
+    }
+
+    public void setCardNo(String cardNo) { // Added setter for cardNo
+        this.cardNo = cardNo;
     }
 }
 
