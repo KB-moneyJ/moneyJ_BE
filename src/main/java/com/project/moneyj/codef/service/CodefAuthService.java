@@ -21,23 +21,23 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class CodefAuthService {
 
-    private final CodefProperties props;
+    private final CodefProperties codefProperties;
     private final WebClient codefWebClient;
-    private final CodefTokenRepository tokenRepository;
+    private final CodefTokenRepository codefTokenRepository;
 
     /**
-     * 외부에서 사용하는 진입점:
+     * 토큰 발급
      *  - 유효 토큰 있으면 반환
      *  - 만료 임박/만료면 재발급 후 저장하고 반환
      */
     @Transactional
     public String getValidAccessToken() {
-        var latestOpt = tokenRepository.findTopByOrderByCodefTokenIdDesc();
+        var latestOpt = codefTokenRepository.findTopByOrderByCodefTokenIdDesc();
         var now = LocalDateTime.now();
 
         if (latestOpt.isPresent()) {
             CodefToken latest = latestOpt.get();
-            var safeLimit = latest.getExpiresAt().minusSeconds(props.getRefreshMarginSec());
+            var safeLimit = latest.getExpiresAt().minusSeconds(codefProperties.getRefreshMarginSec());
             if (now.isBefore(safeLimit)) {
                 return latest.getAccessToken();
             }
@@ -52,45 +52,40 @@ public class CodefAuthService {
     private String issueFirst() {
         TokenResponseDTO res = requestAccessToken();
         var newToken = CodefToken.of(res.getAccessToken(), LocalDateTime.now().plusSeconds(res.getExpiresIn()));
-        tokenRepository.save(newToken);
+        codefTokenRepository.save(newToken);
         return newToken.getAccessToken();
     }
 
     private String refresh(Long idToUpdate) {
         TokenResponseDTO res = requestAccessToken();
 
-        CodefToken token = tokenRepository.findById(idToUpdate)
+        CodefToken token = codefTokenRepository.findById(idToUpdate)
                 .orElseGet(CodefToken::empty);
 
         token.getToken(res);
-        tokenRepository.save(token);
+        codefTokenRepository.save(token);
 
         return token.getAccessToken();
     }
 
     /**
      * CODEF OAuth2 Client Credentials 요청
-     * POST {baseUrl}/oauth/token
-     * - Basic Auth (clientId, clientSecret)
-     * - Content-Type: application/x-www-form-urlencoded
-     * - body: grant_type=client_credentials
      */
     private TokenResponseDTO requestAccessToken() {
 
-        // 1) 토큰 URL을 명시적으로 분리(원하면 oauth.codef.io로 설정)
+        // 토큰 URL을 명시적으로 분리
         String url = "https://oauth.codef.io/oauth/token";
 
         return codefWebClient.post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .headers(h -> {
-                    // 2) BasicAuth도 그대로 사용 (문서가 Basic 요구하면 유지)
-                    h.setBasicAuth(props.getClientId(), props.getClientSecret());
+                    // BasicAuth도 그대로 사용
+                    h.setBasicAuth(codefProperties.getClientId(), codefProperties.getClientSecret());
                 })
-                // 3) Postman과 동일하게 body에 값 추가
                 .body(BodyInserters.fromFormData("grant_type", "client_credentials")
-                        .with("client_id", props.getClientId())
-                        .with("client_secret", props.getClientSecret())
+                        .with("client_id", codefProperties.getClientId())
+                        .with("client_secret", codefProperties.getClientSecret())
                         .with("scope", "read")) // scope 필요 없으면 제거 가능
                 .retrieve()
                 .bodyToMono(TokenResponseDTO.class)
