@@ -1,11 +1,10 @@
-package com.project.moneyj.scheduler.card;
+package com.project.moneyj.transaction.service;
 
+import com.project.moneyj.card.domain.Card;
 import com.project.moneyj.card.repository.CardRepository;
 import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
-import com.project.moneyj.transaction.service.TransactionService;
-import com.project.moneyj.user.repository.UserRepository;
-import com.project.moneyj.card.domain.Card;
 import com.project.moneyj.user.domain.User;
+import com.project.moneyj.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
@@ -16,7 +15,7 @@ import java.util.List;
 
 @Component
 @RequiredArgsConstructor
-public class CardWeeklyScheduler {
+public class TransactionSyncScheduler {
     private final TransactionService transactionService;
     private final UserRepository userRepository;
     private final CardRepository cardRepository;
