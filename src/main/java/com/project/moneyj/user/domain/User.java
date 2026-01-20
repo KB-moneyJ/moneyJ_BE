@@ -2,7 +2,7 @@ package com.project.moneyj.user.domain;
 
 import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.transaction.domain.Transaction;
-import com.project.moneyj.trip.domain.TripMember;
+import com.project.moneyj.trip.member.domain.TripMember;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,8 +16,9 @@ import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import java.util.ArrayList;
 import java.util.List;
-
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
