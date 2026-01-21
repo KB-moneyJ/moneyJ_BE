@@ -1,5 +1,6 @@
 package com.project.moneyj.scheduler.savings;
 
+import com.project.moneyj.trip.service.SavingTipBatchService;
 import com.project.moneyj.trip.service.TripPlanService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -10,7 +11,8 @@ import org.springframework.stereotype.Component;
 @Component
 @RequiredArgsConstructor
 public class SavingsTipScheduler {
-    private final TripPlanService tripPlanService;
+
+    private final SavingTipBatchService savingTipBatchService;
 
     /**
      * 매월 1일 00:00에 저축 팁 갱신
@@ -18,7 +20,7 @@ public class SavingsTipScheduler {
     @Scheduled(cron = "0 0 0 1 * ?", zone = "Asia/Seoul")
     public void updateSavingsTip(){
         log.info("저축 팁 갱신 스케쥴러 시작");
-        tripPlanService.updateAllMemberSavingTip();
+        savingTipBatchService.updateAllMemberSavingTip();
         log.info("저축 팁 갱신 스케쥴러 종료");
     }
 
