@@ -231,8 +231,8 @@ public class AccountService {
     }
 
     @Transactional(readOnly = true)
-    public Integer getUserBalance(Long userId) {
-        return accountRepository.findByUser_UserId(userId)
+    public Integer getUserBalance(Long userId, Long planId) {
+        return accountRepository.findByUserIdAndTripPlanId(userId, planId)
                 .map(Account::getBalance)
                 .orElseThrow(() -> MoneyjException.of(AccountErrorCode.USER_ACCOUNT_NOT_FOUND));
     }
