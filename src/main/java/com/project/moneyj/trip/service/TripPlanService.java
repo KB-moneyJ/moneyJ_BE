@@ -613,22 +613,6 @@ public class TripPlanService {
         addSavingsTip(userId, planId);
     }
 
-    @Transactional
-    public void updateAllMemberSavingTip(){
-        List<TripMember> members = tripMemberRepository.findAll();
-
-        for(TripMember member : members){
-          Long memberId = member.getUser().getUserId();
-          Long planId = member.getTripPlan().getTripPlanId();
-
-          tripSavingPhraseRepository.deleteByTripMember_TripMemberId(member.getTripMemberId());
-
-          updateSavingsTip(memberId, planId);
-        }
-
-    }
-
-
     private double calcProgress(Long totalBalance, Integer budget) {
         if (budget == null || budget <= 0) return 0.0;
 
