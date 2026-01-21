@@ -62,8 +62,7 @@ public class Account extends BaseTimeEntity {
                     String accountNumberMasked,
                     Integer balance,
                     String organizationCode,
-                    String accountName,
-                    LocalDateTime lastUpdateAt) {
+                    String accountName) {
 
         this.user = user;
         this.tripPlan = tripPlan;
