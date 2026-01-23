@@ -98,7 +98,18 @@ public class Account extends BaseTimeEntity {
         this.balance = balance;
     }
 
-    public void switchAccountNumber(String accountNumber){this.accountNumber = accountNumber;}
+    public void switchAccountNumber(String accountNumber,
+                                    String accountNumberMasked,
+                                    Integer balance,
+                                    String organizationCode,
+                                    String accountName
+    ){
+        this.accountNumber = accountNumber;
+        this.accountNumberMasked = accountNumberMasked;
+        this.balance = balance;
+        this.organizationCode = organizationCode;
+        this.accountName = accountName;
+    }
 
     public boolean isStale(Duration threshold, Clock clock){
 
