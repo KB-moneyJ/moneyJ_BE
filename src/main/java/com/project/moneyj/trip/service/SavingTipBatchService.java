@@ -1,13 +1,13 @@
 package com.project.moneyj.trip.service;
 
-import com.project.moneyj.trip.domain.TripMember;
-import com.project.moneyj.trip.repository.TripMemberRepository;
-import com.project.moneyj.trip.repository.TripSavingPhraseRepository;
+
+import com.project.moneyj.trip.member.domain.TripMember;
+import com.project.moneyj.trip.member.repository.TripMemberRepository;
+import com.project.moneyj.trip.tip.repository.TripSavingPhraseRepository;
+import com.project.moneyj.trip.tip.service.TripTipService;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -15,7 +15,7 @@ public class SavingTipBatchService {
 
     private final TripMemberRepository tripMemberRepository;
     private final TripSavingPhraseRepository tripSavingPhraseRepository;
-    private final TripPlanService tripPlanService;
+    private final TripTipService tripTipService;
 
     public void updateAllMemberSavingTip(){
         List<TripMember> members = tripMemberRepository.findAll();
@@ -26,7 +26,7 @@ public class SavingTipBatchService {
 
             tripSavingPhraseRepository.deleteByTripMember_TripMemberId(member.getTripMemberId());
 
-            tripPlanService.updateSavingsTip(memberId, planId);
+            tripTipService.updateSavingsTip(memberId, planId);
         }
 
     }
