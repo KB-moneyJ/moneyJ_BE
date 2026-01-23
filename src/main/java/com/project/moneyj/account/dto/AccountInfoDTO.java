@@ -2,18 +2,17 @@ package com.project.moneyj.account.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Data
+@Getter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AccountLinkRequestDTO {
+public class AccountInfoDTO {
 
-    private Long tripPlanId;
     private String organizationCode;
-    private String accountNumber;
     private String accountName;
+    private String accountNumber;
     private Integer balance;
 }

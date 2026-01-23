@@ -32,7 +32,8 @@ public enum CodefErrorCode implements ErrorCode {
     TOKEN_PARSE_FAILED(HttpStatus.INTERNAL_SERVER_ERROR, "CF010", "CODEF 토큰 응답을 파싱하는데 실패했습니다."),
 
     // 502 BAD_GATEWAY
-    API_HTTP_ERROR(HttpStatus.BAD_GATEWAY, "CF009", "CODEF API 호출 중 HTTP 에러가 발생했습니다.");
+    API_HTTP_ERROR(HttpStatus.BAD_GATEWAY, "CF009", "CODEF API 호출 중 HTTP 에러가 발생했습니다."),
+    CONNECTED_ID_ALREADY_EXISTS(HttpStatus.BAD_GATEWAY, "CF0010", "이미 커넥티드 ID가 존재합니다.");
 
 
     private final HttpStatus httpStatus;

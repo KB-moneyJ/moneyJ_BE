@@ -6,14 +6,13 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.util.List;
-import java.util.Map;
 
 @Data
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AccountListResponseDTO {
+public class CredentialAddRequestDTO {
 
-    private Map<String, Object> result;
-    private List<Map<String, Object>> data; // 기관별 등록 상태 등
+    private String connectedId; // 서버에서 userId로 조회해서 넣어도 됨
+    private List<CredentialCreateRequestDTO.CredentialInput> accountList;
 }
