@@ -59,8 +59,8 @@ class TransactionSchedulerTest {
         );
         ReflectionTestUtils.setField(user2, "userId", 2L);
 
-        Card card1 = Card.of(user1, "004", "1234", "mask1", "국민카드");
-        Card card2 = Card.of(user2, "005", "5678", "mask2", "신한카드");
+        Card card1 = Card.of(user1, "004", "1234","국민카드");
+        Card card2 = Card.of(user2, "005", "5678","신한카드");
 
         given(userRepository.findAllByCardConnectedTrue())
                 .willReturn(List.of(user1, user2));
