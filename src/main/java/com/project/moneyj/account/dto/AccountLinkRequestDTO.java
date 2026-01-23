@@ -1,5 +1,8 @@
 package com.project.moneyj.account.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -11,9 +14,18 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class AccountLinkRequestDTO {
 
+    @NotNull(message = "여행 ID는 필수 입력입니다.")
     private Long tripPlanId;
-    private String organizationCode;
+
+    @NotBlank(message = "계좌번호는 필수 입력입니다.")
+    @Pattern(regexp = "^[0-9]*$", message = "숫자만 입력하세요!")
     private String accountNumber;
-    private String accountName;
+
+    @NotNull(message = "잔액은 필수 입력입니다.")
     private Integer balance;
+
+    @NotBlank(message = "기관 코드는 필수 입력입니다.")
+    private String organizationCode;
+
+    private String accountName;
 }
