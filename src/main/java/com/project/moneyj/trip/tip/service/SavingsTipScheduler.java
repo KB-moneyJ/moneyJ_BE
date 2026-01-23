@@ -1,6 +1,5 @@
-package com.project.moneyj.scheduler.savings;
+package com.project.moneyj.trip.tip.service;
 
-import com.project.moneyj.trip.service.SavingTipBatchService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;

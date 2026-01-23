@@ -1,10 +1,9 @@
-package com.project.moneyj.trip.service;
+package com.project.moneyj.trip.tip.service;
 
 
 import com.project.moneyj.trip.member.domain.TripMember;
 import com.project.moneyj.trip.member.repository.TripMemberRepository;
 import com.project.moneyj.trip.tip.repository.TripSavingPhraseRepository;
-import com.project.moneyj.trip.tip.service.TripTipService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
