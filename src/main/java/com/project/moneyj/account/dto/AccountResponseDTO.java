@@ -9,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AccountLinkResponseDTO {
+public class AccountResponseDTO {
 
     private Long accountId;
     private String accountName;         // 계좌명
