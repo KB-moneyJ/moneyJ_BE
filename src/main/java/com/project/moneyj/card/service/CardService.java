@@ -73,12 +73,11 @@ public class CardService {
             throw MoneyjException.of(CardErrorCode.CARD_ALREADY_EXISTS);
         }
 
-        Card card = Card.builder()
-                .user(user)
-                .cardName(request.getCardName())
-                .cardNo(request.getCardNo())
-                .organizationCode(request.getOrganizationCode())
-                .build();
+        Card card = Card.of(user,
+                request.getCardNo(),
+                request.getOrganizationCode(),
+                request.getCardName()
+        );
 
         Card savedCard = cardRepository.save(card);
 
@@ -107,16 +106,16 @@ public class CardService {
             throw MoneyjException.of(CardErrorCode.ACCESS_DENIED);
         }
 
-        if (request.getCardName() != null) {
-            card.setCardName(request.getCardName());
+        Optional<Card> existingCardWithNewNumber = cardRepository.findByCardNo(request.getCardNo());
+        if( existingCardWithNewNumber.isPresent() && !existingCardWithNewNumber.get().getCardId().equals(cardId)) {
+            throw MoneyjException.of(CardErrorCode.CARD_ALREADY_EXISTS);
         }
 
-        if (request.getCardNo() != null) {
-            card.setCardNo(request.getCardNo());
-        }
+        card.switchCardNumber(request.getCardNo(),
+                request.getOrganizationCode(),
+                request.getCardName()
+        );
 
-        Card updatedCard = cardRepository.save(card);
-
-        return CardResponseDTO.from(updatedCard);
+        return CardResponseDTO.from(card);
     }
 }
