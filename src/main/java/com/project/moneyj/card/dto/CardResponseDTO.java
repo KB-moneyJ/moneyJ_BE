@@ -11,14 +11,14 @@ public class CardResponseDTO {
     private Long cardId;
     private String cardName;
     private String cardNo;
-    private String organization;
+    private String organizationCode;
 
     public static CardResponseDTO from(Card card) {
         return CardResponseDTO.builder()
                 .cardId(card.getCardId())
                 .cardName(card.getCardName())
                 .cardNo(card.getCardNo())
-                .organization(card.getOrganization())
+                .organizationCode(card.getOrganizationCode())
                 .build();
     }
 }

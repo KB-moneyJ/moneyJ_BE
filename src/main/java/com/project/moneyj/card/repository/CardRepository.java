@@ -16,7 +16,7 @@ public interface CardRepository extends JpaRepository<Card, Long> {
 
     Optional<Card> findByUser_UserId(Long userUserId);
 
-    Optional<Card> findByUser_UserIdAndOrganization(Long userId, String organization);
+    Optional<Card> findByUser_UserIdAndOrganizationCode(Long userId, String organization);
 
     // 특정 사용자가 특정 카드번호를 이미 등록했는지 확인
     Optional<Card> findByUserAndCardNo(User user, String cardNo);

@@ -58,7 +58,7 @@ public class CardService {
                 .map(card -> CardInfoDTO.builder()
                         .cardName((String) card.get("resCardName"))
                         .cardNo((String) card.get("resCardNo"))
-                        .organization((String) card.get("organization"))
+                        .organizationCode((String) card.get("organization"))
                         .build())
                 .collect(Collectors.toList());
     }
@@ -77,7 +77,7 @@ public class CardService {
                 .user(user)
                 .cardName(request.getCardName())
                 .cardNo(request.getCardNo())
-                .organization(request.getOrganization())
+                .organizationCode(request.getOrganizationCode())
                 .build();
 
         Card savedCard = cardRepository.save(card);

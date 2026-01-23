@@ -23,7 +23,7 @@ public class Card extends BaseTimeEntity {
 
     private String cardPassword; // Note: sensitive info, should be handled securely
 
-    private String organization; // Renamed from organizationCode
+    private String organizationCode; // Renamed from organizationCode
 
     private String cardName;
 
@@ -32,13 +32,13 @@ public class Card extends BaseTimeEntity {
     private Card(User user,
                  String cardNo,
                  String cardPassword,
-                 String organization, // Renamed
+                 String organizationCode, // Renamed
                  String cardName) {
 
         this.user = user;
         this.cardNo = cardNo;
         this.cardPassword = cardPassword;
-        this.organization = organization; // Renamed
+        this.organizationCode = organizationCode; // Renamed
         this.cardName = cardName;
     }
 
@@ -46,14 +46,14 @@ public class Card extends BaseTimeEntity {
     public static Card of(User user,
                           String cardNo,
                           String cardPassword,
-                          String organization, // Renamed
+                          String organizationCode, // Renamed
                           String cardName) {
 
         return Card.builder()
                 .user(user)
                 .cardNo(cardNo)
                 .cardPassword(cardPassword)
-                .organization(organization) // Renamed
+                .organizationCode(organizationCode) // Renamed
                 .cardName(cardName)
                 .build();
     }

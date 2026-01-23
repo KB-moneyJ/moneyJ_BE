@@ -9,5 +9,5 @@ import lombok.*;
 public class CardInfoDTO {
     private String cardName;
     private String cardNo;
-    private String organization;
+    private String organizationCode;
 }
