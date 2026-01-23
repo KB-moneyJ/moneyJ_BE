@@ -29,6 +29,7 @@ public class CardController implements CardControllerApiSpec {
      * 보유 카드 목록 조회
      * 새로고침 등으로 카드 목록만 다시 불러오고 싶을 때 사용
      */
+    @Override
     @GetMapping("/list")
     public ResponseEntity<Map<String, Object>> getCardList(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -42,7 +43,9 @@ public class CardController implements CardControllerApiSpec {
      * 카드 목록 조회 및 기관 연결
      * CODEF를 통해 기관(은행/카드사)에 연결하고, 성공 시 해당 기관의 카드 목록을 반환
      * 최초 등록시 커넥티드 ID 발급
+     * '카드 변경' 시에도 사용
      */
+    @Override
     @PostMapping("/connect")
     public ResponseEntity<List<CardInfoDTO>> connectInstitutionAndFetchCards(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -55,6 +58,7 @@ public class CardController implements CardControllerApiSpec {
     /**
      * 사용자가 선택한 카드를 DB에 저장
      */
+    @Override
     @PostMapping("/link")
     public ResponseEntity<CardResponseDTO> linkCard(
             @AuthenticationPrincipal CustomOAuth2User customUser,
@@ -67,7 +71,8 @@ public class CardController implements CardControllerApiSpec {
     /**
      * 카드 변경
      */
-    @PatchMapping("/{cardId}")
+    @Override
+    @PatchMapping("/switch/{cardId}")
     public ResponseEntity<CardResponseDTO> switchCard(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @PathVariable Long cardId,
@@ -80,6 +85,7 @@ public class CardController implements CardControllerApiSpec {
     /**
      * 카드 삭제
      */
+    @Override
     @DeleteMapping("/{cardId}")
     public ResponseEntity<Void> deleteCard(
             @AuthenticationPrincipal CustomOAuth2User customUser,
