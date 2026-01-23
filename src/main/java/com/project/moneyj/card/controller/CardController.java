@@ -14,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
@@ -62,7 +63,7 @@ public class CardController implements CardControllerApiSpec {
     @PostMapping("/link")
     public ResponseEntity<CardResponseDTO> linkCard(
             @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestBody CardLinkRequestDTO request) {
+            @RequestBody @Valid CardLinkRequestDTO request) {
         Long userId = customUser.getUserId();
         CardResponseDTO responseDto = cardService.linkCard(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
@@ -76,7 +77,7 @@ public class CardController implements CardControllerApiSpec {
     public ResponseEntity<CardResponseDTO> switchCard(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @PathVariable Long cardId,
-            @RequestBody CardSwitchRequestDTO request) {
+            @RequestBody @Valid CardSwitchRequestDTO request) {
         Long userId = customUser.getUserId();
         CardResponseDTO responseDto = cardService.switchCard(userId, cardId, request);
         return ResponseEntity.ok(responseDto);

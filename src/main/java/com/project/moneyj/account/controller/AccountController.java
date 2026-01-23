@@ -63,7 +63,7 @@ public class AccountController implements AccountControllerApiSpec{
     @PostMapping("/link")
     public ResponseEntity<AccountResponseDTO> linkAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestBody AccountLinkRequestDTO request
+            @RequestBody @Valid AccountLinkRequestDTO request
     ) {
         Long userId = customUser.getUserId();
         // 서비스로부터 DTO를 직접 받음

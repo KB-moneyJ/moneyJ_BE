@@ -18,6 +18,8 @@ import com.project.moneyj.trip.dto.isConsumedRequestDTO;
 import com.project.moneyj.trip.dto.isConsumedResponseDTO;
 import com.project.moneyj.trip.service.TripPlanService;
 import java.util.List;
+
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -44,7 +46,7 @@ public class TripController implements TripControllerApiSpec{
     @Override
     @PostMapping
     public ResponseEntity<TripPlanResponseDTO> createTripPlan(
-        @RequestBody TripPlanRequestDTO request
+            @RequestBody @Valid TripPlanRequestDTO request
     ) {
         TripPlanResponseDTO response = tripPlanService.createTripPlans(request);
         return ResponseEntity.ok(response);
@@ -154,7 +156,7 @@ public class TripController implements TripControllerApiSpec{
     @PostMapping("/isconsumed")
     public ResponseEntity<isConsumedResponseDTO> switchIsConsumed(
             @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestBody isConsumedRequestDTO request
+            @RequestBody @Valid isConsumedRequestDTO request
     ) {
         Long userId = customUser.getUserId();
         return ResponseEntity.ok(tripPlanService.switchIsConsumed(request, userId));
@@ -180,7 +182,7 @@ public class TripController implements TripControllerApiSpec{
     @PatchMapping("/category")
     public ResponseEntity<CategoryResponseDTO> patchCategory(
             @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestBody CategoryListRequestDTO request
+            @RequestBody @Valid CategoryListRequestDTO request
     ) {
         Long userId = customUser.getUserId();
         return ResponseEntity.ok(tripPlanService.patchCategory(request, userId));
