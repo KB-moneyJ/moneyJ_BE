@@ -1,12 +1,13 @@
 package com.project.moneyj.card.dto;
 
-import lombok.Builder;
-import lombok.Getter;
+import lombok.*;
 
 @Getter
 @Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class CardInfoDTO {
     private String cardName;
     private String cardNo;
-    private String organization;
+    private String organizationCode;
 }

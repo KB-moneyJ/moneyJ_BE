@@ -25,9 +25,9 @@ import com.project.moneyj.trip.dto.SavingsTipResponseDTO;
 import com.project.moneyj.trip.dto.TripBudgetRequestDTO;
 import com.project.moneyj.trip.dto.TripBudgetResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanDetailResponseDTO;
-import com.project.moneyj.trip.dto.TripPlanListDTO;
 import com.project.moneyj.trip.dto.TripPlanListResponseDTO;
 import com.project.moneyj.trip.dto.TripPlanPatchRequestDTO;
+import com.project.moneyj.trip.dto.TripPlanQueryDTO;
 import com.project.moneyj.trip.dto.TripPlanRequestDTO;
 import com.project.moneyj.trip.dto.TripPlanResponseDTO;
 import com.project.moneyj.trip.dto.UserBalanceResponseDTO;
@@ -38,6 +38,7 @@ import com.project.moneyj.trip.repository.TripMemberRepository;
 import com.project.moneyj.trip.repository.TripPlanRepository;
 import com.project.moneyj.trip.repository.TripSavingPhraseRepository;
 import com.project.moneyj.trip.repository.TripTipRepository;
+import com.project.moneyj.trip.repository.query.TripPlanQuerydslRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import java.math.BigDecimal;
@@ -69,6 +70,7 @@ public class TripPlanService {
     private final CategoryRepository categoryRepository;
 
     private final TripPlanRepository tripPlanRepository;
+    private final TripPlanQuerydslRepository tripPlanQuerydslRepository;
     private final TripMemberRepository tripMemberRepository;
     private final TripTipRepository tripTipRepository;
     private final TripSavingPhraseRepository tripSavingPhraseRepository;
@@ -133,7 +135,7 @@ public class TripPlanService {
     @Transactional(readOnly = true)
     public List<TripPlanListResponseDTO> getUserTripPlans(Long userId) {
 
-        List<TripPlanListDTO> tripPlans = tripPlanRepository.findAllWithProgress(userId);
+        List<TripPlanQueryDTO> tripPlans = tripPlanQuerydslRepository.findAllWithProgress(userId);
 
         return tripPlans.stream()
             .map(tp -> {
@@ -431,7 +433,7 @@ public class TripPlanService {
         TripMember tripMember = tripMemberRepository.findByTripPlanAndUser(tripPlan, user)
                 .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
-        List<Category> categoriesList = categoryRepository.findByTripPlanIdAndTripMemberId(planId, userId);
+        List<Category> categoriesList = categoryRepository.findByTripPlanIdAndTripMemberId(planId, tripMember.getTripMemberId());
 
         return categoriesList.stream().map(category -> CategoryDTO.fromEntity(category, planId)).toList();
     }
@@ -487,7 +489,7 @@ public class TripPlanService {
         }
 
         // 1. 현재 저축 금액 조회
-        int currentSavings = accountService.getUserBalance(userId);
+        int currentSavings = accountService.getUserBalance(userId, planId);
 
         // 2. 여행 플랜 예산 조회 (목표 저축 금액)
         TripPlan tripPlan = tripPlanRepository.findById(planId)
@@ -498,14 +500,26 @@ public class TripPlanService {
         String baseYearMonth = YearMonth.now().toString(); // 예: "2025-09"
         List<MonthlySummaryDTO> summaries = transactionSummaryService.getMonthlySummary(userId, baseYearMonth);
 
-        // 카테고리별 합산 (Map<Category, TotalAmount>)
+        // 4. TripMember 조회
+        TripMember tripMember = tripMemberRepository.findByUserIdAndPlanId(userId, planId)
+                .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
+
+        // 소비내역 요약이 없을 경우 기본값 저장
+        if(summaries == null || summaries.isEmpty()) {
+            TripSavingPhrase phrase = TripSavingPhrase.of(
+                    tripMember,
+                    "카드에 소비내역이 없어서 저축 팁을 생성하지 못했어요. 나중에 다시 확인해 보세요!"
+            );
+
+            tripSavingPhraseRepository.save(phrase);
+            return;
+        }
+
         Map<String, Integer> categoryTotals = new HashMap<>();
-        Map<String, Integer> categoryCounts = new HashMap<>();
 
         for (MonthlySummaryDTO monthSummary : summaries) {
             for (MonthlySummaryDTO.CategorySummaryDTO cat : monthSummary.getCategories()) {
                 categoryTotals.merge(cat.getCategory(), cat.getTotalAmount(), Integer::sum);
-                categoryCounts.merge(cat.getCategory(), cat.getTransactionCount(), Integer::sum);
             }
         }
 
@@ -523,7 +537,7 @@ public class TripPlanService {
                 .map(e -> String.format("%s : %d", e.getKey(), e.getValue()))
                 .collect(Collectors.joining("\n"));
 
-        // 4. 프롬프트 작성
+        // 5. 프롬프트 작성
         String promptTemplate = PromptLoader.load("/prompts/savings-tip.txt");
         String promptText = String.format(
                 promptTemplate,
@@ -532,7 +546,7 @@ public class TripPlanService {
                 transactionSummary // 6개월 평균 소비 내역
         );
 
-        // 5. GPT 호출
+        // 6. GPT 호출
         SavingsTipResponseDTO response = chatClient
                 .prompt()
                 .system("너는 저축 조언 전문가야. " +
@@ -542,9 +556,6 @@ public class TripPlanService {
                 .call()
                 .entity(SavingsTipResponseDTO.class);
 
-        // 6. TripMember 조회 후 DB 저장
-        TripMember tripMember = tripMemberRepository.findByUserIdAndPlanId(userId, planId)
-                .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
 
         for (String tip : response.getMessages()) {
             TripSavingPhrase phrase = TripSavingPhrase.of(tripMember, tip);
@@ -569,7 +580,7 @@ public class TripPlanService {
         }
 
         // 3. 계좌 확인
-       if (!accountRepository.findByUserIdAndTripPlanId(userId, planId).isPresent()){
+       if (accountRepository.findByUserIdAndTripPlanId(userId, planId).isEmpty()){
            return;
        }
 
@@ -584,6 +595,25 @@ public class TripPlanService {
         addSavingsTip(userId, planId);
     }
 
+    @Transactional
+    //Todo : updateSavingsTip, checkSavingsTip(트랜잭션 잠금용) 코드 중복 정리
+    public void updateSavingsTip(Long userId, Long planId) {
+        if (!tripMemberRepository.existsMemberByUserAndPlan(userId, planId)) {
+            return;
+        }
+
+        if (accountRepository.findByUserIdAndTripPlanId(userId, planId).isEmpty()){
+            return;
+        }
+
+        if (!userRepository.findByUserId(userId)
+                .map(User::isCardConnected)
+                .orElse(false)){
+            return;
+        }
+
+        addSavingsTip(userId, planId);
+    }
 
     private double calcProgress(Long totalBalance, Integer budget) {
         if (budget == null || budget <= 0) return 0.0;
@@ -593,6 +623,5 @@ public class TripPlanService {
             .setScale(1, RoundingMode.HALF_UP)
             .doubleValue();
     }
-
 }
 

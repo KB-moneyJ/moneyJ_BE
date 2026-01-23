@@ -2,7 +2,7 @@ package com.project.moneyj.account.controller;
 
 import com.project.moneyj.account.dto.AccountInfoDTO;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
-import com.project.moneyj.account.dto.AccountLinkResponseDTO;
+import com.project.moneyj.account.dto.AccountResponseDTO;
 import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
 import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
@@ -44,7 +44,7 @@ public interface AccountControllerApiSpec {
             @ApiResponse(responseCode = "201", description = "계좌 저장 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청")
     })
-    ResponseEntity<AccountLinkResponseDTO> linkAccount(
+    ResponseEntity<AccountResponseDTO> linkAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody AccountLinkRequestDTO request
     );
@@ -54,7 +54,7 @@ public interface AccountControllerApiSpec {
             @ApiResponse(responseCode = "201", description = "계좌 변경 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청")
     })
-    ResponseEntity<AccountLinkResponseDTO> switchAccount(
+    ResponseEntity<AccountResponseDTO> switchAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @PathVariable Long accountId,
             @RequestBody AccountSwitchRequestDTO accountSwitchRequestDTO
@@ -86,7 +86,7 @@ public interface AccountControllerApiSpec {
             @ApiResponse(responseCode = "400", description = "잘못된 요청(계좌번호 형식 오류 등)"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    ResponseEntity<AccountLinkResponseDTO> manualAccountUpdate(
+    ResponseEntity<AccountResponseDTO> manualAccountUpdate(
             @Parameter(description = "조회할 계좌 PK", required = true, example = "12")
             @PathVariable Long accId
     );

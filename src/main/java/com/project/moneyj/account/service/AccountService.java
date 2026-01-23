@@ -3,7 +3,7 @@ package com.project.moneyj.account.service;
 import com.project.moneyj.account.domain.Account;
 import com.project.moneyj.account.dto.AccountInfoDTO;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
-import com.project.moneyj.account.dto.AccountLinkResponseDTO;
+import com.project.moneyj.account.dto.AccountResponseDTO;
 import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.account.repository.AccountRepository;
 import com.project.moneyj.codef.domain.CodefConnectedId;
@@ -79,7 +79,7 @@ public class AccountService {
     }
 
     @Transactional
-    public AccountLinkResponseDTO linkUserAccount(Long userId, AccountLinkRequestDTO request) {
+    public AccountResponseDTO linkUserAccount(Long userId, AccountLinkRequestDTO request) {
 
         // 이 여행 계획에 이미 연결된 계좌가 있는지 확인
         if (accountRepository.findByUserIdAndTripPlanId(userId, request.getTripPlanId()).isPresent()) {
@@ -114,7 +114,7 @@ public class AccountService {
             throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
         }
 
-        return AccountLinkResponseDTO.builder()
+        return AccountResponseDTO.builder()
             .accountId(newAccount.getAccountId())
             .accountName(newAccount.getAccountName())
             .accountNumber(maskAdvanced(newAccount.getAccountNumber()))
@@ -157,13 +157,13 @@ public class AccountService {
 
     // 계좌 수동 업데이트
     @Transactional
-    public AccountLinkResponseDTO manualAccount(Long accId) {
+    public AccountResponseDTO manualAccount(Long accId) {
         Account account = accountRepository.findById(accId)
                 .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
 
         syncAccountIfNeeded(account);
 
-        return AccountLinkResponseDTO.builder()
+        return AccountResponseDTO.builder()
                 .accountId(account.getAccountId())
                 .accountName(account.getAccountName())
                 .accountNumber(maskAdvanced(account.getAccountNumber()))
@@ -173,7 +173,7 @@ public class AccountService {
 
     // 계좌 변경
     @Transactional
-    public AccountLinkResponseDTO switchAccount(Long userId, Long accountId, AccountSwitchRequestDTO requestDTO){
+    public AccountResponseDTO switchAccount(Long userId, Long accountId, AccountSwitchRequestDTO requestDTO){
 
         Account account = accountRepository.findById(accountId)
                 .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
@@ -182,9 +182,21 @@ public class AccountService {
             throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
         }
 
-        account.switchAccountNumber(requestDTO.getAccountNumber());
+        // 다른 여행에 해당 계좌가 사용 중인지 확인
+        Optional<Account> existingAccountWithNewNumber = accountRepository.findByAccountNumber(requestDTO.getAccountNumber());
+        if (existingAccountWithNewNumber.isPresent() && !existingAccountWithNewNumber.get().getAccountId().equals(accountId)){
+            // DB에 해당 계좌번호가 존재하고, 그게 지금 변경하려는 계좌가 아니라면 중복 사용입니다.
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
+        }
 
-        return AccountLinkResponseDTO.builder()
+        account.switchAccountNumber(
+                requestDTO.getAccountNumber(),
+                maskAdvanced(requestDTO.getAccountNumber()),
+                requestDTO.getBalance(),
+                requestDTO.getOrganizationCode(),
+                requestDTO.getAccountName());
+
+        return AccountResponseDTO.builder()
                 .accountId(account.getAccountId())
                 .accountName(account.getAccountName())
                 .accountNumber(maskAdvanced(account.getAccountNumber()))
@@ -203,8 +215,8 @@ public class AccountService {
     }
 
     @Transactional(readOnly = true)
-    public Integer getUserBalance(Long userId) {
-        return accountRepository.findByUser_UserId(userId)
+    public Integer getUserBalance(Long userId, Long planId) {
+        return accountRepository.findByUserIdAndTripPlanId(userId, planId)
                 .map(Account::getBalance)
                 .orElseThrow(() -> MoneyjException.of(AccountErrorCode.USER_ACCOUNT_NOT_FOUND));
     }

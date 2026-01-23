@@ -26,4 +26,5 @@ public interface TripSavingPhraseRepository extends JpaRepository<TripSavingPhra
     """)
     boolean existsByUserIdAndPlanId(@Param("userId") Long userId, @Param("planId") Long planId);
 
+    void deleteByTripMember_TripMemberId(Long tripMemberId);
 }

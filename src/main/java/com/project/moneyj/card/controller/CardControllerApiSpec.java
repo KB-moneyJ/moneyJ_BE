@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 
+import javax.validation.Valid;
 import java.util.List;
 import java.util.Map;
 
@@ -54,7 +55,7 @@ public interface CardControllerApiSpec {
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody CardLinkRequestDTO request);
 
-    @Operation(summary = "카드 정보 변경", description = "DB에 저장된 카드의 정보를 변경합니다.")
+    @Operation(summary = "카드 변경", description = "DB에 저장된 카드를 변경합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "카드 정보 변경 성공"),
             @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
@@ -63,7 +64,7 @@ public interface CardControllerApiSpec {
     ResponseEntity<CardResponseDTO> switchCard(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @Parameter(description = "변경할 카드의 ID", required = true) @PathVariable Long cardId,
-            @RequestBody CardSwitchRequestDTO request);
+            @RequestBody @Valid CardSwitchRequestDTO request);
 
     @Operation(summary = "카드 삭제", description = "DB에 저장된 카드를 삭제합니다.")
     @ApiResponses(value = {
