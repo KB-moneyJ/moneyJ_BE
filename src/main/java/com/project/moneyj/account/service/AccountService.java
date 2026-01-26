@@ -3,6 +3,7 @@ package com.project.moneyj.account.service;
 import com.project.moneyj.account.domain.Account;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
 import com.project.moneyj.account.dto.AccountLinkResponseDTO;
+import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.account.repository.AccountRepository;
 import com.project.moneyj.codef.service.CodefBankService;
 import com.project.moneyj.exception.MoneyjException;
@@ -10,8 +11,8 @@ import com.project.moneyj.exception.code.AccountErrorCode;
 import com.project.moneyj.exception.code.CodefErrorCode;
 import com.project.moneyj.exception.code.TripPlanErrorCode;
 import com.project.moneyj.exception.code.UserErrorCode;
-import com.project.moneyj.trip.domain.TripPlan;
-import com.project.moneyj.trip.repository.TripPlanRepository;
+import com.project.moneyj.trip.plan.domain.TripPlan;
+import com.project.moneyj.trip.plan.repository.TripPlanRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import java.util.List;
@@ -150,9 +151,7 @@ public class AccountService {
                         AccountErrorCode.ACCOUNT_NOT_FOUND.format(maskAdvanced(accountNumber))));
     }
 
-    /**
-     * 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
-     */
+    // 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
     @Transactional
     public void syncAccountIfNeeded(Account account) {
 
@@ -200,6 +199,27 @@ public class AccountService {
                 .build();
     }
 
+    // 계좌 변경
+    @Transactional
+    public AccountLinkResponseDTO switchAccount(Long userId, Long accountId, AccountSwitchRequestDTO requestDTO){
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+
+        if (!account.getUser().getUserId().equals(userId)) {
+            throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
+        }
+
+        account.switchAccountNumber(requestDTO.getAccountNumber());
+
+        return AccountLinkResponseDTO.builder()
+                .accountId(account.getAccountId())
+                .accountName(account.getAccountName())
+                .accountNumberDisplay(maskAdvanced(account.getAccountNumber()))
+                .balance(account.getBalance())
+                .build();
+    }
+
     // "1234-****-5678" 형태로 마스킹
     public static String maskAdvanced(String accountNumber) {
         if (accountNumber == null || accountNumber.length() < 8) {
@@ -211,8 +231,8 @@ public class AccountService {
     }
 
     @Transactional(readOnly = true)
-    public Integer getUserBalance(Long userId) {
-        return accountRepository.findByUser_UserId(userId)
+    public Integer getUserBalance(Long userId, Long planId) {
+        return accountRepository.findByUserIdAndTripPlanId(userId, planId)
                 .map(Account::getBalance)
                 .orElseThrow(() -> MoneyjException.of(AccountErrorCode.USER_ACCOUNT_NOT_FOUND));
     }

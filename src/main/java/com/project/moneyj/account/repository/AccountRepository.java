@@ -1,7 +1,7 @@
 package com.project.moneyj.account.repository;
 
 import com.project.moneyj.account.domain.Account;
-import com.project.moneyj.trip.domain.TripPlan;
+import com.project.moneyj.trip.plan.domain.TripPlan;
 import com.project.moneyj.user.domain.User;
 import java.util.List;
 import java.util.Optional;

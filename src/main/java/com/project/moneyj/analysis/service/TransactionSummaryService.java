@@ -4,8 +4,10 @@ package com.project.moneyj.analysis.service;
 import com.project.moneyj.analysis.domain.TransactionSummary;
 import com.project.moneyj.analysis.dto.MonthlySummaryDTO;
 import com.project.moneyj.analysis.dto.MonthlySummaryDTO.CategorySummaryDTO;
+import com.project.moneyj.analysis.dto.SummaryQueryDTO;
 import com.project.moneyj.analysis.dto.SummaryResponseDTO;
 import com.project.moneyj.analysis.repository.TransactionSummaryRepository;
+import com.project.moneyj.analysis.repository.query.TransactionSummaryQuerydslRepository;
 import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.TransactionErrorCode;
 import com.project.moneyj.exception.code.TransactionSummaryErrorCode;
@@ -36,6 +38,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class TransactionSummaryService {
 
     private final TransactionSummaryRepository transactionSummaryRepository;
+    private final TransactionSummaryQuerydslRepository transactionSummaryQuerydslRepository;
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
 
@@ -59,16 +62,16 @@ public class TransactionSummaryService {
             .toList();
 
         // DB에서 해당 기간 TransactionSummary 조회
-        List<TransactionSummary> summaries = transactionSummaryRepository.findByUserIdBetweenMonths(
+        List<SummaryQueryDTO> summaries = transactionSummaryQuerydslRepository.findByUserIdBetweenMonths(
             userId,
             last6Months.get(0).toString(),
             last6Months.get(5).toString()
         );
 
         // 월별 그룹핑
-        Map<String, List<TransactionSummary>> grouped = summaries.stream()
+        Map<String, List<SummaryQueryDTO>> grouped = summaries.stream()
             .collect(Collectors.groupingBy(
-                TransactionSummary::getSummaryMonth,
+                SummaryQueryDTO::getSummaryMonth,
                 LinkedHashMap::new,
                 Collectors.toList()
             ));
@@ -76,11 +79,11 @@ public class TransactionSummaryService {
         return last6Months.stream()
             .map(month -> {
                 String monthStr = month.toString();
-                List<TransactionSummary> monthSummaries = grouped.getOrDefault(monthStr, Collections.emptyList());
+                List<SummaryQueryDTO> monthSummaries = grouped.getOrDefault(monthStr, Collections.emptyList());
 
                 List<MonthlySummaryDTO.CategorySummaryDTO> categories = monthSummaries.stream()
                     .map(s -> new MonthlySummaryDTO.CategorySummaryDTO(
-                        s.getTransactionCategory().getDescription(),
+                        s.getCategory().getDescription(),
                         s.getTotalAmount(),
                         s.getTransactionCount()
                     ))
