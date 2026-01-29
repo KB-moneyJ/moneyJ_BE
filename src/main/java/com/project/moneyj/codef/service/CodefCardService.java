@@ -96,7 +96,7 @@ public class CodefCardService {
 
         String rawResponse = codefApiClient.executePost(url, body);
 
-        log.info("card-list raw={}", rawResponse);
+        log.info("보유 중인 카드 리스트: {}", ApiResponseDecoder.decode(rawResponse));
 
         return ApiResponseDecoder.decode(rawResponse);
     }
