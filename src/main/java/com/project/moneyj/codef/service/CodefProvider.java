@@ -249,6 +249,7 @@ public class CodefProvider {
                 throw MoneyjException.of(CodefErrorCode.BUSINESS_ERROR);
             }
         } catch (Exception e) {
+            log.error("Failed to process CODEF create response. Raw body: {}", rawResponse, e);
             throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
     }
