@@ -7,8 +7,10 @@ import com.project.moneyj.account.dto.AccountResponseDTO;
 import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.account.repository.AccountRepository;
 import com.project.moneyj.codef.domain.CodefConnectedId;
+import com.project.moneyj.codef.domain.CodefInstitution;
 import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
+import com.project.moneyj.codef.repository.CodefInstitutionRepository;
 import com.project.moneyj.codef.service.CodefBankService;
 import com.project.moneyj.codef.service.CodefProvider;
 import com.project.moneyj.exception.MoneyjException;
@@ -41,6 +43,7 @@ public class AccountService {
     private final TripPlanRepository tripPlanRepository;
     private final CodefProvider codefProvider;
     private final CodefConnectedIdRepository codefConnectedIdRepository;
+    private final CodefInstitutionRepository codefInstitutionRepository;
 
     // 등록된 계좌 목록 조회 (단순 조회용)
     @Transactional(readOnly = true)
@@ -74,8 +77,15 @@ public class AccountService {
             // connectedId가 없다면 -> 최초 연동
             codefProvider.createConnectedId(userId, input);
         } else {
-            // connectedId가 있다면 -> 기관 추가
-            codefProvider.addCredential(userId, input);
+            String cid = existingCid.get().getConnectedId();
+            Optional<CodefInstitution> existingInstitution = codefInstitutionRepository
+                .findByConnectedIdAndOrganization(cid, input.getOrganization());
+
+            if(existingInstitution.isEmpty()) {
+                // connectedId가 있고, 기관 등록이 안되었다면 -> 기관 추가
+                // connectedId가 있고, 기관 등록이 이미 되어있다면 -> 계좌 조회로 바로 진행
+                codefProvider.addCredential(userId, input);
+            }
         }
 
         // 등록된 계좌 목록 조회
@@ -103,7 +113,7 @@ public class AccountService {
 
         // 이 여행 계획에 이미 연결된 계좌가 있는지 확인
         if (accountRepository.findByUserIdAndTripPlanId(userId, request.getTripPlanId()).isPresent()) {
-            throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
+            throw MoneyjException.of(AccountErrorCode.TRIP_PLAN_ACCOUNT_ALREADY_LINKED);
         }
 
         // 이 계좌번호가 다른 여행에서 이미 사용 중인지 확인
@@ -205,7 +215,7 @@ public class AccountService {
         // 다른 여행에 해당 계좌가 사용 중인지 확인
         Optional<Account> existingAccountWithNewNumber = accountRepository.findByAccountNumber(requestDTO.getAccountNumber());
         if (existingAccountWithNewNumber.isPresent() && !existingAccountWithNewNumber.get().getAccountId().equals(accountId)){
-            // DB에 해당 계좌번호가 존재하고, 그게 지금 변경하려는 계좌가 아니라면 중복 사용입니다.
+            // DB에 해당 계좌번호가 존재하고, 그게 지금 변경하려는 계좌가 아니라면 중복 사용을 뜻함.
             throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
         }
 
