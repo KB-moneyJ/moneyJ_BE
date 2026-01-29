@@ -59,7 +59,7 @@ public class AccountService {
 
         return depositAccounts.stream()
             .map(acc -> AccountInfoDTO.builder()
-                .organizationCode((String) acc.get("organization"))
+                .organizationCode(organization)
                 .accountName((String) acc.get("resAccountName"))
                 .accountNumber((String) acc.get("resAccount"))
                 .balance(Integer.parseInt(String.valueOf(acc.get("resAccountBalance"))))
@@ -99,7 +99,7 @@ public class AccountService {
 
         return depositAccounts.stream()
             .map(acc -> AccountInfoDTO.builder()
-                .organizationCode((String) acc.get("organization"))
+                .organizationCode(input.getOrganization())
                 .accountName((String) acc.get("resAccountName"))
                 .accountNumber((String) acc.get("resAccount"))
                 .balance(Integer.parseInt(String.valueOf(acc.get("resAccountBalance"))))
