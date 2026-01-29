@@ -7,8 +7,10 @@ import com.project.moneyj.card.dto.CardResponseDTO;
 import com.project.moneyj.card.dto.CardSwitchRequestDTO;
 import com.project.moneyj.card.repository.CardRepository;
 import com.project.moneyj.codef.domain.CodefConnectedId;
+import com.project.moneyj.codef.domain.CodefInstitution;
 import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
+import com.project.moneyj.codef.repository.CodefInstitutionRepository;
 import com.project.moneyj.codef.service.CodefCardService;
 import com.project.moneyj.codef.service.CodefProvider;
 import com.project.moneyj.exception.MoneyjException;
@@ -33,6 +35,7 @@ public class CardService {
     private final CodefProvider codefProvider;
     private final CodefCardService codefCardService;
     private final CodefConnectedIdRepository codefConnectedIdRepository;
+    private final CodefInstitutionRepository codefInstitutionRepository;
 
     // 카드 목록 조회 (단순 조회용)
     @Transactional(readOnly = true)
@@ -40,17 +43,14 @@ public class CardService {
 
         Map<String, Object> codefResponse = codefCardService.fetchCards(userId, organization);
 
-        Map<String, Object> data = (Map<String, Object>) codefResponse.get("data");
-        if (data == null || data.get("resCardList") == null) {
-            return List.of();
-        }
-        List<Map<String, Object>> cardListFromApi = (List<Map<String, Object>>) data.get("resCardList");
+        Object dataObj = codefResponse.get("data");
+        List<Map<String, Object>> cardListFromApi = normalizeToList(dataObj);
 
         return cardListFromApi.stream()
                 .map(card -> CardInfoDTO.builder()
                         .cardName((String) card.get("resCardName"))
                         .cardNo((String) card.get("resCardNo"))
-                        .organizationCode((String) card.get("organization"))
+                        .organizationCode(organization)
                         .build())
                 .collect(Collectors.toList());
     }
@@ -63,23 +63,27 @@ public class CardService {
         if (existingCid.isEmpty()) {
             codefProvider.createConnectedId(userId, input);
         } else {
-            codefProvider.addCredential(userId, input);
+            String cid = existingCid.get().getConnectedId();
+            Optional<CodefInstitution> existingInstitution = codefInstitutionRepository
+                    .findByConnectedIdAndOrganization(cid, input.getOrganization());
+
+            if(existingInstitution.isEmpty()) {
+                // connectedId가 있고, 기관 등록이 안되었다면 -> 기관 추가
+                // connectedId가 있고, 기관 등록이 이미 되어있다면 -> 카드 조회로 바로 진행
+                codefProvider.addCredential(userId, input);
+            }
         }
 
         Map<String, Object> codefResponse = codefCardService.fetchCards(userId, input.getOrganization());
 
-        Map<String, Object> data = (Map<String, Object>) codefResponse.get("data");
-        if (data == null || data.get("resCardList") == null) {
-            return List.of();
-        }
-        List<Map<String, Object>> cardListFromApi = (List<Map<String, Object>>) data.get("resCardList");
-
+        Object dataObj = codefResponse.get("data");
+        List<Map<String, Object>> cardListFromApi = normalizeToList(dataObj);
 
         return cardListFromApi.stream()
                 .map(card -> CardInfoDTO.builder()
                         .cardName((String) card.get("resCardName"))
                         .cardNo((String) card.get("resCardNo"))
-                        .organizationCode((String) card.get("organization"))
+                        .organizationCode(input.getOrganization())
                         .build())
                 .collect(Collectors.toList());
     }
@@ -139,4 +143,20 @@ public class CardService {
 
         return CardResponseDTO.from(card);
     }
+
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> normalizeToList(Object obj) {
+        if (obj == null) return List.of();
+
+        if (obj instanceof List<?> list) {
+            return (List<Map<String, Object>>) list;
+        }
+
+        if (obj instanceof Map<?, ?> map) {
+            return List.of((Map<String, Object>) map);
+        }
+
+        return List.of();
+    }
+
 }
