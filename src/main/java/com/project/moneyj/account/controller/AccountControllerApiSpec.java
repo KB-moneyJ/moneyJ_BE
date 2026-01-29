@@ -1,5 +1,6 @@
 package com.project.moneyj.account.controller;
 
+import com.project.moneyj.account.domain.Account;
 import com.project.moneyj.account.dto.AccountInfoDTO;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
 import com.project.moneyj.account.dto.AccountResponseDTO;
@@ -22,7 +23,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface AccountControllerApiSpec {
 
     @Operation(summary = "은행 계좌 목록 조회", description = "특정 기관(은행)의 계좌 목록을 조회합니다.")
-    ResponseEntity<?> getAccountList(
+    ResponseEntity<List<AccountInfoDTO>> getAccountList(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @Parameter(description = "조회할 기관 코드") @RequestParam String organization
     );
