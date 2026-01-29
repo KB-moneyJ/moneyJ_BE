@@ -36,12 +36,13 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class CodefProvider {
 
-    private final WebClient codefWebClient;
     private final CodefProperties props;
+    private final WebClient codefWebClient;
     private final CodefAuthService codefAuthService;
     private final CodefInstitutionRepository codefInstitutionRepository;
     private final CodefConnectedIdRepository connectedIdRepository;
     private final ObjectMapper objectMapper;
+    private final CodefApiClient codefApiClient;
 
     // 최초 계정 등록 → Connected ID 발급
     // 아이디 비번 입력만 해도 Connected ID 발급
@@ -64,18 +65,9 @@ public class CodefProvider {
                 .build();
 
         // CODEF 호출
-        String token = codefAuthService.getValidAccessToken();
         String url = props.getBaseUrl() + "/v1/account/create";
 
-        String rawResponseBody = codefWebClient.post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON)
-                .headers(h -> h.setBearerAuth(token))
-                .bodyValue(req)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+        String rawResponseBody = codefApiClient.executePost(url, req);
 
         log.info("Raw response from CODEF: {}", rawResponseBody);
 
@@ -110,15 +102,9 @@ public class CodefProvider {
                 "accountList", List.of(credentialInput)
         );
 
-        String accessToken = codefAuthService.getValidAccessToken();
-        String rawResponse = codefWebClient.post()
-                .uri(props.getBaseUrl() + "/v1/account/add")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(requestBody)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+        String url = props.getBaseUrl() + "/v1/account/add";
+
+        String rawResponse = codefApiClient.executePost(url, requestBody);
 
         Map<String, Object> responseMap = parseCodefResponse(rawResponse);
         List<Map<String, Object>> successList = (List<Map<String, Object>>) ((Map<String, Object>) responseMap.get("data")).get("successList");
@@ -136,19 +122,10 @@ public class CodefProvider {
                 .orElseThrow(() -> new IllegalStateException("Connected ID 없음")).getConnectedId();
 
         Map<String, Object> body = Map.of("connectedId", cid);
-        String token = codefAuthService.getValidAccessToken();
         String url = props.getBaseUrl() + "/v1/account/list";
 
-        String raw = codefWebClient.post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .headers(h -> h.setBearerAuth(token))
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
-
-        return ApiResponseDecoder.decode(raw);
+        String rawResponse = codefApiClient.executePost(url, body);
+        return ApiResponseDecoder.decode(rawResponse);
     }
 
     // CODEF 연결된 계정을 삭제
@@ -159,6 +136,7 @@ public class CodefProvider {
                 .getConnectedId();
 
         String accessToken = codefAuthService.getValidAccessToken();
+        String url = props.getBaseUrl() + "/v1/account/delete";
         String organizationCode = request.getOrganizationCode();
 
         CodefInstitution institutionToDelete = codefInstitutionRepository.findByConnectedIdAndOrganization(connectedId, organizationCode)
@@ -177,7 +155,7 @@ public class CodefProvider {
         );
 
         String rawResponse = codefWebClient.post()
-                .uri(props.getBaseUrl() + "/v1/account/delete")
+                .uri(url)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)

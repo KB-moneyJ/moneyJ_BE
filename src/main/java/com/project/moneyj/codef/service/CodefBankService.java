@@ -20,9 +20,8 @@ import java.util.Map;
 @Slf4j
 public class CodefBankService {
 
-    private final WebClient codefWebClient;
+    private final CodefApiClient codefApiClient;
     private final CodefProperties codefProperties;
-    private final CodefAuthService codefAuthService;
     private final CodefConnectedIdRepository codefConnectedIdRepository;
 
     // 등록된 계좌 목록 조회
@@ -37,21 +36,12 @@ public class CodefBankService {
                 .connectedId(cid)
                 .build();
 
-        String token = codefAuthService.getValidAccessToken();
-        // 예시 경로 (필요 시 문서 기준으로 조정)
         String url = codefProperties.getBaseUrl() + "/v1/kr/bank/p/account/account-list";
 
-        String raw = codefWebClient.post()
-                .uri(url)
-                .contentType(MediaType.APPLICATION_JSON)
-                .headers(h -> h.setBearerAuth(token))
-                .bodyValue(req)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+        String rawResponse = codefApiClient.executePost(url, req);
 
-        log.info("bank account-list raw={}", raw);
+        log.info("bank account-list raw={}", rawResponse);
 
-        return ApiResponseDecoder.decode(raw);
+        return ApiResponseDecoder.decode(rawResponse);
     }
 }

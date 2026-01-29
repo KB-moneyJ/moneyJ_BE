@@ -27,18 +27,12 @@ import java.util.*;
 @Slf4j
 public class CodefCardService {
 
-    private final WebClient codefWebClient;
-    private final CodefAuthService codefAuthService;
-    private final CodefConnectedIdRepository codefConnectedIdRepository;
+    private final CodefApiClient codefApiClient;
     private final CodefProperties codefProperties;
-    private final ObjectMapper objectMapper = new ObjectMapper();
-    private final UserRepository userRepository;
-    private final CardRepository cardRepository;
-
+    private final CodefConnectedIdRepository codefConnectedIdRepository;
 
     // 거래 내역 조회(카드)
     public Map<String, Object> getCardApprovalList(Long userId, CardApprovalRequestDTO req) {
-        String accessToken = codefAuthService.getValidAccessToken();
 
         String connectedId = codefConnectedIdRepository.findActiveConnectedIdByUserId(userId)
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
@@ -82,17 +76,9 @@ public class CodefCardService {
 
         String url = codefProperties.getBaseUrl() + "/v1/kr/card/p/account/approval-list";
 
-        String encodedResponse = codefWebClient.post()
-                .uri(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(String.class) // text/plain 방지용
-                .block();
+        String rawResponse = codefApiClient.executePost(url, body);
 
-        return ApiResponseDecoder.decode(encodedResponse);
+        return ApiResponseDecoder.decode(rawResponse);
     }
 
     // 보유 카드 조회
@@ -106,20 +92,12 @@ public class CodefCardService {
                 "connectedId", connectedId
         );
 
-        String accessToken = codefAuthService.getValidAccessToken();
         String url = codefProperties.getBaseUrl() + "/v1/kr/card/p/account/card-list";
 
-        String encodedResponse = codefWebClient.post()
-                .uri(url)
-                .header(HttpHeaders.AUTHORIZATION, "Bearer " + accessToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .bodyValue(body)
-                .retrieve()
-                .bodyToMono(String.class)
-                .block();
+        String rawResponse = codefApiClient.executePost(url, body);
 
-        log.info("card-list raw={}", encodedResponse);
+        log.info("card-list raw={}", rawResponse);
 
-        return ApiResponseDecoder.decode(encodedResponse);
+        return ApiResponseDecoder.decode(rawResponse);
     }
 }
