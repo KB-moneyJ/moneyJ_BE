@@ -22,7 +22,6 @@ import org.springframework.web.bind.annotation.*;
 public class AccountController implements AccountControllerApiSpec{
 
     private final AccountService accountService;
-    private final CodefBankService codefBankService;
 
     /**
      * 은행 계좌 목록 조회 (단순 조회용)
@@ -30,12 +29,12 @@ public class AccountController implements AccountControllerApiSpec{
      */
     @Override
     @GetMapping("/list")
-    public ResponseEntity<?> getAccountList(
+    public ResponseEntity<List<AccountInfoDTO>> getAccountList(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestParam String organization) {
 
         Long userId = customUser.getUserId();
-        return ResponseEntity.ok(codefBankService.fetchBankAccounts(userId, organization));
+        return ResponseEntity.ok(accountService.getAccountList(userId, organization));
     }
 
     /**

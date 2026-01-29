@@ -42,15 +42,34 @@ public class AccountService {
     private final CodefProvider codefProvider;
     private final CodefConnectedIdRepository codefConnectedIdRepository;
 
-    /**
-     * 기관 연결 및 등록된 계좌 목록 조회
-     */
+    // 등록된 계좌 목록 조회 (단순 조회용)
+    @Transactional(readOnly = true)
+    public List<AccountInfoDTO> getAccountList(Long userId, String organization) {
+
+        Map<String, Object> codefResponse = codefBankService.fetchBankAccounts(userId, organization);
+
+        Map<String, Object> data = (Map<String, Object>) codefResponse.get("data");
+        if (data == null || data.get("resDepositTrust") == null) {
+            return Collections.emptyList();
+        }
+        List<Map<String, Object>> depositAccounts = (List<Map<String, Object>>) data.get("resDepositTrust");
+
+        return depositAccounts.stream()
+            .map(acc -> AccountInfoDTO.builder()
+                .organizationCode((String) acc.get("organization"))
+                .accountName((String) acc.get("resAccountName"))
+                .accountNumber((String) acc.get("resAccount"))
+                .balance(Integer.parseInt(String.valueOf(acc.get("resAccountBalance"))))
+                .build())
+            .collect(Collectors.toList());
+    }
+
+    // 기관 연결 및 등록된 계좌 목록 조회
     @Transactional
     public List<AccountInfoDTO> connectInstitutionAndFetchAccounts(Long userId, CredentialCreateRequestDTO.CredentialInput input) {
 
         // 기관 등록
         Optional<CodefConnectedId> existingCid = codefConnectedIdRepository.findByUserId(userId);
-
         if (existingCid.isEmpty()) {
             // connectedId가 없다면 -> 최초 연동
             codefProvider.createConnectedId(userId, input);
@@ -78,6 +97,7 @@ public class AccountService {
             .collect(Collectors.toList());
     }
 
+    // 사용자가 선택한 은행 계좌를 저장
     @Transactional
     public AccountResponseDTO linkUserAccount(Long userId, AccountLinkRequestDTO request) {
 
