@@ -33,7 +33,7 @@ public class ApiResponseDecoder {
             return objectMapper.readValue(decodedJson, new TypeReference<Map<String, Object>>() {});
 
         } catch (Exception e) {
-            System.err.println("API 응답 디코딩 또는 파싱 실패: " + e.getMessage());
+            System.err.println("API 응답 디코딩 또는 파싱 실패: " + e);
             return Collections.emptyMap(); // 에러 발생 시 빈 Map 반환
         }
     }
