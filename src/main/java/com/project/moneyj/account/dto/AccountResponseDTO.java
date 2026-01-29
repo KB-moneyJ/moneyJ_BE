@@ -6,6 +6,10 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * 계좌 공통 응답 DTO
+ * 계좌 연결 후 사용
+ */
 public class AccountResponseDTO {
 
     private Long accountId;

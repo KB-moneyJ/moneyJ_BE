@@ -7,6 +7,10 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * 카드 공통 응답 DTO
+ * 카드 연결 후 사용
+ */
 public class CardResponseDTO {
     private Long cardId;
     private String cardName;

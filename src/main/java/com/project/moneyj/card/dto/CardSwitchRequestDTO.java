@@ -7,6 +7,9 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * 카드 변경 요청 DTO
+ */
 public class CardSwitchRequestDTO {
     private String cardName;
     @NotBlank(message = "카드번호는 필수 입력입니다.")

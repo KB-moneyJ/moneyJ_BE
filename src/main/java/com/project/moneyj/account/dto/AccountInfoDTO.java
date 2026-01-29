@@ -6,6 +6,10 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * 계좌 정보 DTO
+ * 계좌 연결 전 사용
+ */
 public class AccountInfoDTO {
 
     private String organizationCode;

@@ -7,6 +7,9 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * 카드 연결 요청 DTO
+ */
 public class CardLinkRequestDTO {
 
     private String cardName;

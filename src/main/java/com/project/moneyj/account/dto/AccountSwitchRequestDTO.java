@@ -9,6 +9,9 @@ import lombok.*;
 @Builder
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * 계좌 변경 요청 DTO
+ */
 public class AccountSwitchRequestDTO {
 
     @NotBlank(message = "계좌번호는 필수 입력입니다.")
