@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 @Log4j2
 @Component
@@ -20,25 +21,39 @@ public class CodefApiClient {
 
     /**
      * Codef API POST 요청 실행
-     * @param path API 엔드포인트 경로
+     * @param url API 엔드포인트 경로
      * @param body 요청 본문
      * @return 원본 API 응답 String
      */
-    public String executePost(String path, Object body) {
-        String url = codefProperties.getBaseUrl() + path;
+    public String executePost(String url, Object body) {
         String token = codefAuthService.getValidAccessToken();
 
-        String rawResponse =  codefWebClient.post()
+        return codefWebClient.post()
                 .uri(url)
                 .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(body)
-                .retrieve()
-                .bodyToMono(String.class)
+                .exchangeToMono(resp -> {
+                    Mono<String> bodyMono = resp.bodyToMono(String.class).defaultIfEmpty("");
+
+                    if (resp.statusCode().isError()) {
+                        // 에러 상태 코드일 경우 (4xx, 5xx)
+                        return bodyMono.doOnNext(errorBody ->
+                                log.error("CODEF API Error: status={}, url={}, body={}",
+                                        resp.statusCode(),
+                                        url,
+                                        errorBody) // 에러 본문 전체를 로그로 남김
+                        );
+                    } else {
+                        // 성공 상태 코드일 경우
+                        return bodyMono.doOnNext(successBody -> {
+                            // 성공 로그는 DEBUG 레벨로 남겨서 평소에는 보이지 않게 함
+                            log.debug("CODEF API Success: status={}, url={}", resp.statusCode(), url);
+                            log.debug("CODEF raw body preview (first 100)={}",
+                                    successBody.length() > 100 ? successBody.substring(0, 100) : successBody);
+                        });
+                    }
+                })
                 .block();
-
-        log.info("Raw response from Codef API ({}): {}", path, rawResponse);
-
-        return rawResponse;
     }
 }
