@@ -16,15 +16,13 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/api/cards") // Base path changed to /cards
+@RequestMapping("/api/cards")
 public class CardController implements CardControllerApiSpec {
 
     private final CardService cardService;
-    private final CodefCardService codefCardService;
 
     /**
      * 보유 카드 목록 조회
@@ -32,12 +30,12 @@ public class CardController implements CardControllerApiSpec {
      */
     @Override
     @GetMapping("/list")
-    public ResponseEntity<Map<String, Object>> getCardList(
+    public ResponseEntity<List<CardInfoDTO>> getCardList(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestParam String organization) {
 
         Long userId = customUser.getUserId();
-        return ResponseEntity.ok(codefCardService.fetchCards(userId, organization));
+        return ResponseEntity.ok(cardService.getCardList(userId, organization));
     }
 
     /**

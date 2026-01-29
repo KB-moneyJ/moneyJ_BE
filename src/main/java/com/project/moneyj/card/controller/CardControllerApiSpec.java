@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.validation.Valid;
 import java.util.List;
-import java.util.Map;
 
 @Tag(name = "Cards", description = "카드 API")
 public interface CardControllerApiSpec {
@@ -30,7 +29,7 @@ public interface CardControllerApiSpec {
             @ApiResponse(responseCode = "404", description = "연결된 CODEF 정보를 찾을 수 없음"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    ResponseEntity<Map<String, Object>> getCardList(
+    ResponseEntity<List<CardInfoDTO>> getCardList(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @Parameter(description = "조회할 기관 코드 (예: 0331)", required = true) @RequestParam String organization);
 
