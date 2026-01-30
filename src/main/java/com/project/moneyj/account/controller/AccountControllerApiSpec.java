@@ -76,7 +76,7 @@ public interface AccountControllerApiSpec {
     );
 
     @Operation(summary = "DB에서 계좌 삭제", description = "계좌를 DB에서 삭제합니다.(codef와 연결은 삭제 안됨)")
-    ResponseEntity<Void> deleteAccount(@PathVariable Long accountId);
+    ResponseEntity<String> deleteAccount(@PathVariable Long accountId);
 
     @Operation(
             summary = "계좌번호 수동 업데이트",

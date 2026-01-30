@@ -90,11 +90,11 @@ public class AccountController implements AccountControllerApiSpec{
      */
     @Override
     @DeleteMapping("/{accountId}")
-    public ResponseEntity<Void> deleteAccount(
+    public ResponseEntity<String> deleteAccount(
             @PathVariable Long accountId
     ) {
         accountService.deleteAccount(accountId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("계좌가 성공적으로 삭제되었습니다.");
     }
 
     /**

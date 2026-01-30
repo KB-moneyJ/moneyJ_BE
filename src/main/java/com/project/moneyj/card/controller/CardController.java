@@ -86,11 +86,11 @@ public class CardController implements CardControllerApiSpec {
      */
     @Override
     @DeleteMapping("/{cardId}")
-    public ResponseEntity<Void> deleteCard(
+    public ResponseEntity<String> deleteCard(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @PathVariable Long cardId) {
         Long userId = customUser.getUserId();
         cardService.deleteCard(userId, cardId);
-        return ResponseEntity.noContent().build();
+        return ResponseEntity.ok("카드가 삭제되었습니다.");
     }
 }

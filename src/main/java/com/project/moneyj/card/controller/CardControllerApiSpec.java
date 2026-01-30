@@ -71,7 +71,7 @@ public interface CardControllerApiSpec {
             @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
             @ApiResponse(responseCode = "404", description = "카드를 찾을 수 없음")
     })
-    ResponseEntity<Void> deleteCard(
+    ResponseEntity<String> deleteCard(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @Parameter(description = "삭제할 카드의 ID", required = true) @PathVariable Long cardId);
 }
