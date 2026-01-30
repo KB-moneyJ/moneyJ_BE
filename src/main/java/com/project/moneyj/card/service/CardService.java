@@ -37,29 +37,13 @@ public class CardService {
     private final CodefConnectedIdRepository codefConnectedIdRepository;
     private final CodefInstitutionRepository codefInstitutionRepository;
 
-    // 카드 목록 조회 (단순 조회용)
-    @Transactional(readOnly = true)
-    public List<CardInfoDTO> getCardList(Long userId, String organization) {
-
-        Map<String, Object> codefResponse = codefCardService.fetchCards(userId, organization);
-
-        Object dataObj = codefResponse.get("data");
-        List<Map<String, Object>> cardListFromApi = normalizeToList(dataObj);
-
-        return cardListFromApi.stream()
-                .map(card -> CardInfoDTO.builder()
-                        .cardName((String) card.get("resCardName"))
-                        .cardNo((String) card.get("resCardNo"))
-                        .organizationCode(organization)
-                        .build())
-                .collect(Collectors.toList());
-    }
-
     // 카드 목록 조회 및 기관 연결
     @Transactional
     public List<CardInfoDTO> connectInstitutionAndFetchCards(Long userId, CredentialCreateRequestDTO.CredentialInput input) {
+
         Optional<CodefConnectedId> existingCid = codefConnectedIdRepository.findByUserId(userId);
 
+        // 기관 등록
         if (existingCid.isEmpty()) {
             codefProvider.createConnectedId(userId, input);
         } else {

@@ -22,12 +22,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Tag(name = "Accounts", description = "여행 플랜 계좌 API")
 public interface AccountControllerApiSpec {
 
-    @Operation(summary = "은행 계좌 목록 조회", description = "특정 기관(은행)의 계좌 목록을 조회합니다.")
-    ResponseEntity<List<AccountInfoDTO>> getAccountList(
-            @AuthenticationPrincipal CustomOAuth2User customUser,
-            @Parameter(description = "조회할 기관 코드") @RequestParam String organization
-    );
-
     @Operation(summary = "기관 연결 및 계좌 목록 조회", description = "CODEF를 통해 기관(은행/카드사)에 연결하고, 성공 시 해당 기관의 계좌 목록을 반환합니다.")
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "기관 연결 및 계좌 목록 조회 성공"),

@@ -24,20 +24,6 @@ public class AccountController implements AccountControllerApiSpec{
     private final AccountService accountService;
 
     /**
-     * 은행 계좌 목록 조회 (단순 조회용)
-     * 새로고침 등으로 계좌 목록만 다시 불러오고 싶을 때 사용
-     */
-    @Override
-    @GetMapping("/list")
-    public ResponseEntity<List<AccountInfoDTO>> getAccountList(
-            @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestParam String organization) {
-
-        Long userId = customUser.getUserId();
-        return ResponseEntity.ok(accountService.getAccountList(userId, organization));
-    }
-
-    /**
      * 은행 계좌 목록 조회 및 기관 연결
      * CODEF를 통해 기관(은행/카드사)에 연결하고, 성공 시 해당 기관의 계좌 목록을 반환
      * 최초 등록시 커넥티드 ID 발급
@@ -65,7 +51,6 @@ public class AccountController implements AccountControllerApiSpec{
             @RequestBody @Valid AccountLinkRequestDTO request
     ) {
         Long userId = customUser.getUserId();
-        // 서비스로부터 DTO를 직접 받음
         AccountResponseDTO responseDto = accountService.linkUserAccount(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }

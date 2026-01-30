@@ -25,20 +25,6 @@ public class CardController implements CardControllerApiSpec {
     private final CardService cardService;
 
     /**
-     * 보유 카드 목록 조회
-     * 새로고침 등으로 카드 목록만 다시 불러오고 싶을 때 사용
-     */
-    @Override
-    @GetMapping("/list")
-    public ResponseEntity<List<CardInfoDTO>> getCardList(
-            @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestParam String organization) {
-
-        Long userId = customUser.getUserId();
-        return ResponseEntity.ok(cardService.getCardList(userId, organization));
-    }
-
-    /**
      * 카드 목록 조회 및 기관 연결
      * CODEF를 통해 기관(은행/카드사)에 연결하고, 성공 시 해당 기관의 카드 목록을 반환
      * 최초 등록시 커넥티드 ID 발급

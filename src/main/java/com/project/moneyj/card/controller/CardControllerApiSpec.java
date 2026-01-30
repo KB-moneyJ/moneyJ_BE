@@ -23,16 +23,6 @@ import java.util.List;
 @Tag(name = "Cards", description = "카드 API")
 public interface CardControllerApiSpec {
 
-    @Operation(summary = "보유 카드 목록 조회", description = "CODEF에 연결된 특정 기관(카드사)의 보유 카드 목록을 조회합니다.")
-    @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "카드 목록 조회 성공"),
-            @ApiResponse(responseCode = "404", description = "연결된 CODEF 정보를 찾을 수 없음"),
-            @ApiResponse(responseCode = "500", description = "서버 내부 오류")
-    })
-    ResponseEntity<List<CardInfoDTO>> getCardList(
-            @AuthenticationPrincipal CustomOAuth2User customUser,
-            @Parameter(description = "조회할 기관 코드 (예: 0331)", required = true) @RequestParam String organization);
-
     @Operation(summary = "카드사 연결 및 카드 목록 조회", description = "CODEF를 통해 카드사에 연결하고, 성공 시 해당 기관의 카드 목록을 반환합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "기관 연결 및 카드 목록 조회 성공"),
