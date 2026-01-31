@@ -86,9 +86,11 @@ public class TripPlanController implements TripPlanControllerApiSpec {
     @PatchMapping("/{planId}")
     public ResponseEntity<TripPlanResponseDTO> putPlan(
             @PathVariable Long planId,
-            @RequestBody TripPlanPatchRequestDTO requestDTO
+            @RequestBody TripPlanPatchRequestDTO requestDTO,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     ){
-        TripPlanResponseDTO updatedPlan = tripPlanService.patchPlan(planId, requestDTO);
+        Long userId = customUser.getUserId();
+        TripPlanResponseDTO updatedPlan = tripPlanService.patchPlan(userId, planId, requestDTO);
         return ResponseEntity.ok(updatedPlan);
     }
 

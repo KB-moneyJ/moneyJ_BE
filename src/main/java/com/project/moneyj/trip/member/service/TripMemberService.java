@@ -57,7 +57,12 @@ public class TripMemberService {
      * 여행 멤버 추가
      */
     @Transactional
-    public TripPlanResponseDTO addTripMember(Long planId, AddTripMemberRequestDTO addDTO) {
+    public TripPlanResponseDTO addTripMember(Long userId, Long planId, AddTripMemberRequestDTO addDTO) {
+
+        // 사용자 검증 (실제 여행 멤버에 속하는지)
+        if (!tripMemberRepository.existsMemberByUserAndPlan(userId, planId)) {
+            throw MoneyjException.of(TripMemberErrorCode.NOT_FOUND);
+        }
 
         // 여행 플랜 조회
         TripPlan existingPlan = tripPlanRepository.findById(planId)
@@ -110,7 +115,12 @@ public class TripMemberService {
      */
     // TODO: 달성률 계산 부분 calcProgress 사용 고려
     @Transactional(readOnly = true)
-    public UserBalanceResponseDTO getUserBalances(Long tripPlanId) {
+    public UserBalanceResponseDTO getUserBalances(Long userId, Long tripPlanId) {
+
+        // 사용자 검증 (실제 여행 멤버에 속하는지)
+        if (!tripMemberRepository.existsMemberByUserAndPlan(userId, tripPlanId)) {
+            throw MoneyjException.of(TripMemberErrorCode.NOT_FOUND);
+        }
 
         // 요청된 플랜이 실제 존재하는지 확인
         TripPlan tripPlan = tripPlanRepository.findById(tripPlanId)

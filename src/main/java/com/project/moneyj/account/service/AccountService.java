@@ -37,13 +37,16 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AccountService {
 
+    private final CodefProvider codefProvider;
+
+    private final CodefBankService codefBankService;
+
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
-    private final CodefBankService codefBankService;
     private final TripPlanRepository tripPlanRepository;
-    private final CodefProvider codefProvider;
     private final CodefConnectedIdRepository codefConnectedIdRepository;
     private final CodefInstitutionRepository codefInstitutionRepository;
+
 
     // 기관 연결 및 등록된 계좌 목록 조회
     @Transactional
@@ -131,55 +134,6 @@ public class AccountService {
             .build();
     }
 
-    // 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
-    @Transactional
-    public void syncAccountIfNeeded(Account account) {
-
-        Long userId = account.getUser().getUserId();
-        String orgCode = account.getOrganizationCode();
-        String accountNumber = account.getAccountNumber();
-
-        if (orgCode == null || accountNumber == null) {
-            throw MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND);
-        }
-
-        // CODEF API 호출
-        Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
-
-        Map<String, Object> data = (Map<String, Object>) res.get("data");
-        if (data == null || data.get("resDepositTrust") == null) {
-            throw MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND);
-        }
-
-        List<Map<String, Object>> accountsFromCodef = (List<Map<String, Object>>) data.get("resDepositTrust");
-
-        // 현재 Account와 매칭되는 CODEF 계좌 찾아서 업데이트
-        accountsFromCodef.stream()
-                .filter(m -> accountNumber.equals(String.valueOf(m.get("resAccount"))))
-                .findFirst()
-                .ifPresent(map -> {
-
-                    long balanceLong = Long.parseLong(String.valueOf(map.get("resAccountBalance")));
-                    account.updateBalance((int) balanceLong);
-                });
-    }
-
-    // 계좌 수동 업데이트
-    @Transactional
-    public AccountResponseDTO manualAccount(Long accId) {
-        Account account = accountRepository.findById(accId)
-                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
-
-        syncAccountIfNeeded(account);
-
-        return AccountResponseDTO.builder()
-                .accountId(account.getAccountId())
-                .accountName(account.getAccountName())
-                .accountNumber(maskAdvanced(account.getAccountNumber()))
-                .balance(account.getBalance())
-                .build();
-    }
-
     // 계좌 변경
     @Transactional
     public AccountResponseDTO switchAccount(Long userId, Long accountId, AccountSwitchRequestDTO requestDTO){
@@ -213,6 +167,87 @@ public class AccountService {
                 .build();
     }
 
+    // 계좌 삭제
+    @Transactional
+    public void deleteAccount(Long userId, Long accountId) {
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
+
+        if (!account.getUser().getUserId().equals(userId)) {
+            throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
+        }
+
+        accountRepository.delete(account);
+    }
+
+    // 계좌번호 저장 여부 검사
+    @Transactional(readOnly = true)
+    public boolean checkAccountOwnership(Long userId, String accountNumber) {
+
+        Optional<Account> account = accountRepository.findByAccountNumber(accountNumber);
+
+        if(account.isPresent() && !account.get().getUser().getUserId().equals(userId)){
+            throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
+        }
+
+        return account.isPresent();
+    }
+
+    // 계좌 수동 업데이트
+    @Transactional
+    public AccountResponseDTO manualAccount(Long userId, Long accId) {
+
+        Account account = accountRepository.findById(accId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+
+        if (!account.getUser().getUserId().equals(userId)) {
+            throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
+        }
+
+        syncAccountIfNeeded(account);
+
+        return AccountResponseDTO.builder()
+                .accountId(account.getAccountId())
+                .accountName(account.getAccountName())
+                .accountNumber(maskAdvanced(account.getAccountNumber()))
+                .balance(account.getBalance())
+                .build();
+    }
+
+    // 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
+    @Transactional
+    public void syncAccountIfNeeded(Account account) {
+
+        Long userId = account.getUser().getUserId();
+        String orgCode = account.getOrganizationCode();
+        String accountNumber = account.getAccountNumber();
+
+        if (orgCode == null || accountNumber == null) {
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        // CODEF API 호출
+        Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
+
+        Map<String, Object> data = (Map<String, Object>) res.get("data");
+        if (data == null || data.get("resDepositTrust") == null) {
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND);
+        }
+
+        List<Map<String, Object>> accountsFromCodef = (List<Map<String, Object>>) data.get("resDepositTrust");
+
+        // 현재 Account와 매칭되는 CODEF 계좌 찾아서 업데이트
+        accountsFromCodef.stream()
+                .filter(m -> accountNumber.equals(String.valueOf(m.get("resAccount"))))
+                .findFirst()
+                .ifPresent(map -> {
+
+                    long balanceLong = Long.parseLong(String.valueOf(map.get("resAccountBalance")));
+                    account.updateBalance((int) balanceLong);
+                });
+    }
+
     // "1234-****-5678" 형태로 마스킹
     public static String maskAdvanced(String accountNumber) {
         if (accountNumber == null || accountNumber.length() < 8) {
@@ -230,16 +265,4 @@ public class AccountService {
                 .orElseThrow(() -> MoneyjException.of(AccountErrorCode.USER_ACCOUNT_NOT_FOUND));
     }
 
-    @Transactional(readOnly = true)
-    public boolean checkAccountOwnership(String accountNumber) {
-        return accountRepository.findByAccountNumber(accountNumber).isPresent();
-    }
-
-    @Transactional
-    public void deleteAccount(Long accountId) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
-
-        accountRepository.delete(account);
-    }
 }

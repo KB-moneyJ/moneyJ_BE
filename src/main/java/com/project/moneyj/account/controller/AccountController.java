@@ -76,9 +76,11 @@ public class AccountController implements AccountControllerApiSpec{
     @Override
     @DeleteMapping("/{accountId}")
     public ResponseEntity<String> deleteAccount(
-            @PathVariable Long accountId
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     ) {
-        accountService.deleteAccount(accountId);
+        Long userId = customUser.getUserId();
+        accountService.deleteAccount(userId, accountId);
         return ResponseEntity.ok("계좌가 성공적으로 삭제되었습니다.");
     }
 
@@ -88,9 +90,11 @@ public class AccountController implements AccountControllerApiSpec{
     @Override
     @GetMapping("/check/{accountNumber}")
     public boolean checkAccountOwnership(
-            @PathVariable String accountNumber
+            @PathVariable String accountNumber,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     ) {
-        return accountService.checkAccountOwnership(accountNumber);
+        Long userId = customUser.getUserId();
+        return accountService.checkAccountOwnership(userId, accountNumber);
     }
 
     /**
@@ -99,8 +103,10 @@ public class AccountController implements AccountControllerApiSpec{
     @Override
     @GetMapping("/{accountId}")
     public ResponseEntity<AccountResponseDTO> manualAccountUpdate(
-            @PathVariable Long accountId
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     ){
-        return ResponseEntity.ok(accountService.manualAccount(accountId));
+        Long userId = customUser.getUserId();
+        return ResponseEntity.ok(accountService.manualAccount(userId, accountId));
     }
 }

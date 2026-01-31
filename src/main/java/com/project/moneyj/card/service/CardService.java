@@ -30,10 +30,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CardService {
 
+    private final CodefProvider codefProvider;
+
+    private final CodefCardService codefCardService;
+
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
-    private final CodefProvider codefProvider;
-    private final CodefCardService codefCardService;
     private final CodefConnectedIdRepository codefConnectedIdRepository;
     private final CodefInstitutionRepository codefInstitutionRepository;
 
@@ -93,19 +95,7 @@ public class CardService {
         return CardResponseDTO.from(savedCard);
     }
 
-    @Transactional
-    public void deleteCard(Long userId, Long cardId) {
-        Card card = cardRepository.findById(cardId)
-                .orElseThrow(() -> MoneyjException.of(CardErrorCode.CARD_NOT_FOUND));
-
-        if (!card.getUser().getUserId().equals(userId)) {
-            throw MoneyjException.of(CardErrorCode.ACCESS_DENIED);
-        }
-
-        // 로컬 삭제
-        cardRepository.delete(card);
-    }
-
+    // 카드 변경
     @Transactional
     public CardResponseDTO switchCard(Long userId, Long cardId, CardSwitchRequestDTO request) {
         Card card = cardRepository.findById(cardId)
@@ -126,6 +116,20 @@ public class CardService {
         );
 
         return CardResponseDTO.from(card);
+    }
+
+    // 카드 삭제
+    @Transactional
+    public void deleteCard(Long userId, Long cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> MoneyjException.of(CardErrorCode.CARD_NOT_FOUND));
+
+        if (!card.getUser().getUserId().equals(userId)) {
+            throw MoneyjException.of(CardErrorCode.ACCESS_DENIED);
+        }
+
+        // 로컬 삭제
+        cardRepository.delete(card);
     }
 
     @SuppressWarnings("unchecked")
