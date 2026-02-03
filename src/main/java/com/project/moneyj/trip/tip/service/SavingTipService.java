@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
+import org.springframework.ai.openai.OpenAiChatOptions;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -138,8 +139,8 @@ public class SavingTipService {
                 currentSavings, // 현재 저축 금액
                 tripBudget, // 목표 저축 금액
                 transactionSummary,// 6개월 평균 소비 내역
-                now.toString(),
-                startDate.toString(),
+                now.toString(), // 현재 날짜
+                startDate.toString(), // 여행 출발 날짜
                 daysUntilTrip //현재 날짜 ~ 여행 출발 날짜까지의 차이 일
         );
     }
@@ -147,6 +148,11 @@ public class SavingTipService {
     public SavingsTipResponseDTO callGpt(String promptText) {
         return chatClient
                 .prompt()
+                .options(OpenAiChatOptions.builder()
+                        .model("gpt-4o-mini")
+                        .maxCompletionTokens(1000)
+                        .temperature(0.0)
+                        .build())
                 .system("너는 저축 조언 전문가야. " +
                         "사용자의 소비 내역을 분석해서 반드시 3개의 맞춤형 저축 팁을 작성해줘. \\\n" +
                         "반드시 예시를 참고하여 구어체를 사용하여 답변해.")
@@ -171,12 +177,13 @@ public class SavingTipService {
     }
 
     @Transactional
-    public void updateSavingsTip(Long userId, Long planId) {
+    public void updateSavingsTip(Long userId, Long planId, Long memberId) {
+        tripSavingPhraseRepository.deleteByTripMember_TripMemberId(memberId);
+
         if (conditionSavingsTip(userId, planId)) {
             addSavingsTip(userId, planId);
         }
     }
-
 
     private boolean conditionSavingsTip(Long userId, Long planId) {
         if (!tripMemberRepository.existsMemberByUserAndPlan(userId, planId)) return false;
@@ -185,6 +192,5 @@ public class SavingTipService {
                 .map(User::isCardConnected)
                 .orElse(false);
     }
-
 }
 
