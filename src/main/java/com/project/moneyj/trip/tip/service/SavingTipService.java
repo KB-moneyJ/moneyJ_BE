@@ -32,7 +32,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class TripTipService {
+public class SavingTipService {
 
     private final UserRepository userRepository;
     private final TripPlanRepository tripPlanRepository;
