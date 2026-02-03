@@ -18,7 +18,10 @@ import com.project.moneyj.trip.tip.dto.SavingsTipResponseDTO;
 import com.project.moneyj.trip.tip.repository.TripSavingPhraseRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
+
+import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -72,8 +75,13 @@ public class SavingTipService {
             tripSavingPhraseRepository.save(phrase);
             return;
         }
+        LocalDate startDate = tripPlan.getStartDate();
 
-        String promptText = buildPrompt(currentSavings, tripBudget, transactionSummary);
+        LocalDate now = LocalDate.now();
+
+        long daysUntilTrip = ChronoUnit.DAYS.between(now, startDate);
+
+        String promptText = buildPrompt(currentSavings, tripBudget, transactionSummary, now, startDate, daysUntilTrip);
 
         SavingsTipResponseDTO response = callGpt(promptText);
 
@@ -116,13 +124,23 @@ public class SavingTipService {
                 .collect(Collectors.joining("\n"));
     }
 
-    public String buildPrompt (int currentSavings, int tripBudget, String transactionSummary) {
+    public String buildPrompt (
+            int currentSavings,
+            int tripBudget,
+            String transactionSummary,
+            LocalDate now,
+            LocalDate startDate,
+            long daysUntilTrip
+    ) {
         String promptTemplate = PromptLoader.load("/prompts/savings-tip.txt");
         return String.format(
                 promptTemplate,
                 currentSavings, // 현재 저축 금액
                 tripBudget, // 목표 저축 금액
-                transactionSummary // 6개월 평균 소비 내역
+                transactionSummary,// 6개월 평균 소비 내역
+                now.toString(),
+                startDate.toString(),
+                daysUntilTrip //현재 날짜 ~ 여행 출발 날짜까지의 차이 일
         );
     }
 
