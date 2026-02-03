@@ -77,7 +77,7 @@ class TripMemberServiceTest {
         given(accountRepository.findByTripPlanId(tripPlanId)).willReturn(List.of(staleAccount));
         given(categoryRepository.findByTripPlanId(tripPlanId)).willReturn(Collections.emptyList());
 
-        tripMemberService.getUserBalances(tripPlanId);
+        tripMemberService.getUserBalances(user.getUserId(), tripPlanId);
 
         verify(accountService, times(1)).syncAccountIfNeeded(staleAccount);
     }
@@ -111,7 +111,7 @@ class TripMemberServiceTest {
         given(accountRepository.findByTripPlanId(tripPlanId)).willReturn(List.of(freshAccount));
         given(categoryRepository.findByTripPlanId(tripPlanId)).willReturn(Collections.emptyList());
 
-        tripMemberService.getUserBalances(tripPlanId);
+        tripMemberService.getUserBalances(user.getUserId(), tripPlanId);
 
         verify(accountService, times(0)).syncAccountIfNeeded(any());
     }

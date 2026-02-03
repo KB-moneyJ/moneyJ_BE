@@ -1,12 +1,14 @@
 package com.project.moneyj.trip.member.controller;
 
 
+import com.project.moneyj.auth.dto.CustomOAuth2User;
 import com.project.moneyj.trip.member.dto.AddTripMemberRequestDTO;
 import com.project.moneyj.trip.member.dto.UserBalanceResponseDTO;
 import com.project.moneyj.trip.member.service.TripMemberService;
 import com.project.moneyj.trip.plan.dto.plan.TripPlanResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -29,9 +31,11 @@ public class TripMemberController implements TripMemberControllerApiSpec {
     @PostMapping("/{planId}/members")
     public ResponseEntity<TripPlanResponseDTO> addTripMember(
             @PathVariable Long planId,
-            @RequestBody AddTripMemberRequestDTO addTripMemberRequestDTO
+            @RequestBody AddTripMemberRequestDTO addTripMemberRequestDTO,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     ){
-        TripPlanResponseDTO updatedPlan = tripMemberService.addTripMember(planId, addTripMemberRequestDTO);
+        Long userId = customUser.getUserId();
+        TripPlanResponseDTO updatedPlan = tripMemberService.addTripMember(userId, planId, addTripMemberRequestDTO);
         return ResponseEntity.ok(updatedPlan);
     }
 
@@ -43,10 +47,11 @@ public class TripMemberController implements TripMemberControllerApiSpec {
     @Override
     @GetMapping("/{tripPlanId}/balances")
     public ResponseEntity<UserBalanceResponseDTO> getBalances(
-        @PathVariable Long tripPlanId
+        @PathVariable Long tripPlanId,
+        @AuthenticationPrincipal CustomOAuth2User customUser
     ) {
-
-        UserBalanceResponseDTO response = tripMemberService.getUserBalances(tripPlanId);
+        Long userId = customUser.getUserId();
+        UserBalanceResponseDTO response = tripMemberService.getUserBalances(userId, tripPlanId);
         return ResponseEntity.ok(response);
     }
 

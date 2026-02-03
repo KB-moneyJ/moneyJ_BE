@@ -56,6 +56,14 @@ public interface AccountControllerApiSpec {
     );
 
     @Operation(
+            summary = "DB에서 계좌 삭제", description = "계좌를 DB에서 삭제합니다.(codef와 연결은 삭제 안됨)"
+    )
+    ResponseEntity<String> deleteAccount(
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal CustomOAuth2User customUser
+    );
+
+    @Operation(
             summary = "계좌번호 저장 여부 검사",
             description = "해당 계좌번호가 현재 사용자에게 이미 저장(등록)되어 있는지 여부를 반환합니다."
     )
@@ -66,11 +74,10 @@ public interface AccountControllerApiSpec {
     })
     boolean checkAccountOwnership(
             @Parameter(description = "조회할 계좌번호", required = true, example = "123-456-789012")
-            @PathVariable String accountNumber
+            @PathVariable String accountNumber,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     );
 
-    @Operation(summary = "DB에서 계좌 삭제", description = "계좌를 DB에서 삭제합니다.(codef와 연결은 삭제 안됨)")
-    ResponseEntity<String> deleteAccount(@PathVariable Long accountId);
 
     @Operation(
             summary = "계좌번호 수동 업데이트",
@@ -83,7 +90,8 @@ public interface AccountControllerApiSpec {
     })
     ResponseEntity<AccountResponseDTO> manualAccountUpdate(
             @Parameter(description = "조회할 계좌 PK", required = true, example = "12")
-            @PathVariable Long accId
+            @PathVariable Long accId,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     );
 
 }
