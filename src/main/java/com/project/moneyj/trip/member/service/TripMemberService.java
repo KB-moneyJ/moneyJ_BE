@@ -192,5 +192,9 @@ public class TripMemberService {
                 .build();
     }
 
+    public List<TripMember> getTripMembers() {
+        return tripMemberRepository.findAllWithUserAndPlan();
+    }
+
 }
 
