@@ -31,8 +31,6 @@ public class Card extends BaseTimeEntity {
 
     private String cardNo;
 
-    private String cardPassword;
-
     private String organizationCode;
 
     private String cardName;
@@ -41,35 +39,44 @@ public class Card extends BaseTimeEntity {
     @Builder(access = AccessLevel.PRIVATE)
     private Card(User user,
                  String cardNo,
-                 String cardPassword,
-                 String organizationCode,
+                 String organizationCode, // Renamed
                  String cardName) {
 
         this.user = user;
         this.cardNo = cardNo;
-        this.cardPassword = cardPassword;
-        this.organizationCode = organizationCode;
+        this.organizationCode = organizationCode; // Renamed
         this.cardName = cardName;
     }
 
     // === 정적 팩토리 메서드 ===
     public static Card of(User user,
                           String cardNo,
-                          String cardPassword,
-                          String organizationCode,
+                          String organizationCode, // Renamed
                           String cardName) {
 
         return Card.builder()
                 .user(user)
                 .cardNo(cardNo)
-                .cardPassword(cardPassword)
-                .organizationCode(organizationCode)
+                .organizationCode(organizationCode) // Renamed
                 .cardName(cardName)
                 .build();
     }
 
     // ==== 비즈니스 메서드 ====
     public void setCardName(String cardName){
+        this.cardName = cardName;
+    }
+
+    public void setCardNo(String cardNo) { // Added setter for cardNo
+        this.cardNo = cardNo;
+    }
+
+    public void switchCardNumber(String cardNo,
+                                    String organizationCode,
+                                    String cardName
+    ){
+        this.cardNo = cardNo;
+        this.organizationCode = organizationCode;
         this.cardName = cardName;
     }
 }

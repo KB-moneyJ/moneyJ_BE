@@ -1,0 +1,28 @@
+package com.project.moneyj.card.dto;
+
+import com.project.moneyj.card.domain.Card;
+import lombok.*;
+
+@Getter
+@Builder
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * 카드 공통 응답 DTO
+ * 카드 연결 후 사용
+ */
+public class CardResponseDTO {
+    private Long cardId;
+    private String cardName;
+    private String cardNo;
+    private String organizationCode;
+
+    public static CardResponseDTO from(Card card) {
+        return CardResponseDTO.builder()
+                .cardId(card.getCardId())
+                .cardName(card.getCardName())
+                .cardNo(card.getCardNo())
+                .organizationCode(card.getOrganizationCode())
+                .build();
+    }
+}

@@ -1,14 +1,18 @@
 package com.project.moneyj.account.controller;
 
+import com.project.moneyj.account.domain.Account;
+import com.project.moneyj.account.dto.AccountInfoDTO;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
-import com.project.moneyj.account.dto.AccountLinkResponseDTO;
+import com.project.moneyj.account.dto.AccountResponseDTO;
 import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
+import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import java.util.List;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,12 +22,24 @@ import org.springframework.web.bind.annotation.RequestParam;
 @Tag(name = "Accounts", description = "여행 플랜 계좌 API")
 public interface AccountControllerApiSpec {
 
+    @Operation(summary = "기관 연결 및 계좌 목록 조회", description = "CODEF를 통해 기관(은행/카드사)에 연결하고, 성공 시 해당 기관의 계좌 목록을 반환합니다.")
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "기관 연결 및 계좌 목록 조회 성공"),
+        @ApiResponse(responseCode = "400", description = "잘못된 요청 또는 CODEF 비즈니스 오류"),
+        @ApiResponse(responseCode = "401", description = "인증 실패"),
+        @ApiResponse(responseCode = "500", description = "서버 내부 오류")
+    })
+    ResponseEntity<List<AccountInfoDTO>> connectAndFetchAccounts(
+        @AuthenticationPrincipal CustomOAuth2User customUser,
+        @RequestBody CredentialCreateRequestDTO.CredentialInput request
+    );
+
     @Operation(summary = "여행별 선택한 계좌를 DB에 저장", description = "사용자가 선택한 계좌를 DB에 저장합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "계좌 저장 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청")
     })
-    ResponseEntity<AccountLinkResponseDTO> linkAccount(
+    ResponseEntity<AccountResponseDTO> linkAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @RequestBody AccountLinkRequestDTO request
     );
@@ -33,7 +49,7 @@ public interface AccountControllerApiSpec {
             @ApiResponse(responseCode = "201", description = "계좌 변경 성공"),
             @ApiResponse(responseCode = "400", description = "잘못된 요청")
     })
-    ResponseEntity<AccountLinkResponseDTO> switchAccount(
+    ResponseEntity<AccountResponseDTO> switchAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @PathVariable Long accountId,
             @RequestBody AccountSwitchRequestDTO accountSwitchRequestDTO
@@ -54,7 +70,7 @@ public interface AccountControllerApiSpec {
     );
 
     @Operation(summary = "DB에서 계좌 삭제", description = "계좌를 DB에서 삭제합니다.(codef와 연결은 삭제 안됨)")
-    ResponseEntity<Void> deleteAccount(@PathVariable Long accountId);
+    ResponseEntity<String> deleteAccount(@PathVariable Long accountId);
 
     @Operation(
             summary = "계좌번호 수동 업데이트",
@@ -65,7 +81,7 @@ public interface AccountControllerApiSpec {
             @ApiResponse(responseCode = "400", description = "잘못된 요청(계좌번호 형식 오류 등)"),
             @ApiResponse(responseCode = "500", description = "서버 내부 오류")
     })
-    ResponseEntity<AccountLinkResponseDTO> manualAccountUpdate(
+    ResponseEntity<AccountResponseDTO> manualAccountUpdate(
             @Parameter(description = "조회할 계좌 PK", required = true, example = "12")
             @PathVariable Long accId
     );
