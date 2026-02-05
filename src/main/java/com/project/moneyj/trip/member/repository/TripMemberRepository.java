@@ -44,4 +44,10 @@ public interface TripMemberRepository extends JpaRepository<TripMember, Long> {
     """)
     TripMember findMemberForUpdate(Long userId, Long planId);
 
+    @Query("""
+    select tm from TripMember tm
+            join fetch tm.user
+            join fetch tm.tripPlan
+    """)
+    List<TripMember> findAllWithUserAndPlan();
 }
