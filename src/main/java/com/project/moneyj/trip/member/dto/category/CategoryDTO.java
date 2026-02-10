@@ -1,6 +1,6 @@
-package com.project.moneyj.trip.plan.dto.category;
+package com.project.moneyj.trip.member.dto.category;
 
-import com.project.moneyj.trip.plan.domain.Category;
+import com.project.moneyj.trip.member.domain.Category;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.PositiveOrZero;
 import lombok.AllArgsConstructor;

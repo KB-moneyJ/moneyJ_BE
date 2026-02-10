@@ -1,17 +1,12 @@
 package com.project.moneyj.trip.plan.controller;
 
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.trip.plan.dto.category.CategoryDTO;
-import com.project.moneyj.trip.plan.dto.category.CategoryListRequestDTO;
-import com.project.moneyj.trip.plan.dto.category.CategoryResponseDTO;
-import com.project.moneyj.trip.plan.dto.category.isConsumedRequestDTO;
-import com.project.moneyj.trip.plan.dto.category.isConsumedResponseDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripBudgetRequestDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripBudgetResponseDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanListResponseDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanPatchRequestDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanRequestDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanResponseDTO;
+import com.project.moneyj.trip.plan.dto.TripBudgetRequestDTO;
+import com.project.moneyj.trip.plan.dto.TripBudgetResponseDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanListResponseDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanPatchRequestDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanRequestDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanResponseDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -65,25 +60,6 @@ public interface TripPlanControllerApiSpec {
     @Operation(summary = "여행 경비 계산", description = "여행에 필요한 예상 경비를 계산합니다.")
     ResponseEntity<TripBudgetResponseDTO> getTripBudget(
             @RequestBody TripBudgetRequestDTO request
-    );
-
-
-    @Operation(summary = "카테고리 목표 달성 여부 변경", description = "특정 카테고리의 소비 완료 여부를 토글합니다.")
-    ResponseEntity<isConsumedResponseDTO> switchIsConsumed(
-        @AuthenticationPrincipal CustomOAuth2User customUser,
-        @RequestBody isConsumedRequestDTO request
-    );
-
-    @Operation(summary = "카테고리별 달성 여부 조회", description = "플랜의 모든 카테고리별 소비 완료 여부를 조회합니다.")
-    ResponseEntity<List<CategoryDTO>> getIsConsumed(
-        @AuthenticationPrincipal CustomOAuth2User customUser,
-        @Parameter(description = "조회할 플랜 ID") @PathVariable Long planId
-    );
-
-    @Operation(summary = "카테고리 변경", description = "여행 플랜의 카테고리 목록을 수정합니다.")
-    ResponseEntity<CategoryResponseDTO> patchCategory(
-        @AuthenticationPrincipal CustomOAuth2User customUser,
-        @RequestBody CategoryListRequestDTO request
     );
 
 }

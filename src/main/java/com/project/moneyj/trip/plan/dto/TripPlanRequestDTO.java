@@ -1,6 +1,6 @@
-package com.project.moneyj.trip.plan.dto.plan;
+package com.project.moneyj.trip.plan.dto;
 
-import com.project.moneyj.trip.plan.dto.category.CategoryDTO;
+import com.project.moneyj.trip.member.dto.category.CategoryDTO;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;

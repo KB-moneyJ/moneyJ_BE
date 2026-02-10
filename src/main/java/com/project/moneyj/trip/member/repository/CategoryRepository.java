@@ -1,6 +1,6 @@
-package com.project.moneyj.trip.plan.repository;
+package com.project.moneyj.trip.member.repository;
 
-import com.project.moneyj.trip.plan.domain.Category;
+import com.project.moneyj.trip.member.domain.Category;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
