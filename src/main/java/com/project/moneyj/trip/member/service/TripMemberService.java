@@ -177,10 +177,12 @@ public class TripMemberService {
 
                     return UserBalanceResponseDTO.UserBalanceInfo.builder()
                             .accountId(account.getAccountId())
+                            .accountName(account.getAccountName())
+                            .accountNumber(account.getAccountNumber())
+                            .balance(accountBalance)
                             .userId(account.getUser().getUserId())
                             .nickname(account.getUser().getNickname())
                             .profileImage(account.getUser().getProfileImage())
-                            .balance(accountBalance)
                             .progress(progress)
                             .build();
                 })
