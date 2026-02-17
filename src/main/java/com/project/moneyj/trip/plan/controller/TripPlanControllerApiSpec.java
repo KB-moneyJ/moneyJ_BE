@@ -51,7 +51,8 @@ public interface TripPlanControllerApiSpec {
     @Operation(summary = "여행 플랜 수정", description = "특정 여행 플랜의 내용을 수정합니다.")
     ResponseEntity<TripPlanResponseDTO> putPlan(
             @Parameter(description = "수정할 플랜 ID") @PathVariable Long planId,
-            @RequestBody TripPlanPatchRequestDTO requestDTO
+            @RequestBody TripPlanPatchRequestDTO requestDTO,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     );
 
     @Operation(summary = "여행 플랜 탈퇴", description = "참여 중인 여행 플랜에서 나갑니다.")

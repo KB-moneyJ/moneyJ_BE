@@ -1,23 +1,31 @@
 package com.project.moneyj.account.service;
 
 import com.project.moneyj.account.domain.Account;
+import com.project.moneyj.account.dto.AccountInfoDTO;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
-import com.project.moneyj.account.dto.AccountLinkResponseDTO;
+import com.project.moneyj.account.dto.AccountResponseDTO;
 import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.account.repository.AccountRepository;
+import com.project.moneyj.codef.domain.CodefConnectedId;
+import com.project.moneyj.codef.domain.CodefInstitution;
+import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
+import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
+import com.project.moneyj.codef.repository.CodefInstitutionRepository;
 import com.project.moneyj.codef.service.CodefBankService;
+import com.project.moneyj.codef.service.CodefProvider;
 import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.AccountErrorCode;
-import com.project.moneyj.exception.code.CodefErrorCode;
 import com.project.moneyj.exception.code.TripPlanErrorCode;
 import com.project.moneyj.exception.code.UserErrorCode;
 import com.project.moneyj.trip.plan.domain.TripPlan;
 import com.project.moneyj.trip.plan.repository.TripPlanRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -29,126 +37,182 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class AccountService {
 
+    private final CodefProvider codefProvider;
+
+    private final CodefBankService codefBankService;
+
     private final AccountRepository accountRepository;
     private final UserRepository userRepository;
-    private final CodefBankService codefBankService;
     private final TripPlanRepository tripPlanRepository;
+    private final CodefConnectedIdRepository codefConnectedIdRepository;
+    private final CodefInstitutionRepository codefInstitutionRepository;
 
+
+    // 기관 연결 및 등록된 계좌 목록 조회
     @Transactional
-    public AccountLinkResponseDTO linkUserAccount(Long userId, AccountLinkRequestDTO request) {
+    public List<AccountInfoDTO> connectInstitutionAndFetchAccounts(Long userId, CredentialCreateRequestDTO.CredentialInput input) {
 
-        // DB에서 이 사용자의 연동 계좌가 이미 있는지
-        Optional<Account> existingAccountOpt = accountRepository.findByAccountNumber(request.getAccountNumber());
+        Optional<CodefConnectedId> existingCid = codefConnectedIdRepository.findByUserId(userId);
 
-        String orgCode = existingAccountOpt.isPresent() ? existingAccountOpt.get().getOrganizationCode() : request.getOrganizationCode();
-        if (orgCode == null) {
-            throw MoneyjException.of(CodefErrorCode.INITIAL_INSTITUTION_NOT_FOUND);
+        // 기관 등록
+        if (existingCid.isEmpty()) {
+            // connectedId가 없다면 -> 최초 연동
+            codefProvider.createConnectedId(userId, input);
+        } else {
+            String cid = existingCid.get().getConnectedId();
+            Optional<CodefInstitution> existingInstitution = codefInstitutionRepository
+                .findByConnectedIdAndOrganization(cid, input.getOrganization());
+
+            if(existingInstitution.isEmpty()) {
+                // connectedId가 있고, 기관 등록이 안되었다면 -> 기관 추가
+                // connectedId가 있고, 기관 등록이 이미 되어있다면 -> 계좌 조회로 바로 진행
+                codefProvider.addCredential(userId, input);
+            }
         }
 
-        // CODEF API를 호출하여 최신 계좌 조회
-        Map<String, Object> codefResponse = codefBankService.fetchBankAccounts(userId, orgCode);
+        // 등록된 계좌 목록 조회
+        Map<String, Object> codefResponse = codefBankService.fetchBankAccounts(userId, input.getOrganization());
+
         Map<String, Object> data = (Map<String, Object>) codefResponse.get("data");
         if (data == null || data.get("resDepositTrust") == null) {
-            throw MoneyjException.of(CodefErrorCode.BANK_ACCOUNT_NOT_FOUND);
+            return Collections.emptyList();
         }
         List<Map<String, Object>> depositAccounts = (List<Map<String, Object>>) data.get("resDepositTrust");
 
-        Account finalAccount;
+        return depositAccounts.stream()
+            .map(acc -> AccountInfoDTO.builder()
+                .organizationCode(input.getOrganization())
+                .accountName((String) acc.get("resAccountName"))
+                .accountNumber((String) acc.get("resAccount"))
+                .balance(Integer.parseInt(String.valueOf(acc.get("resAccountBalance"))))
+                .build())
+            .collect(Collectors.toList());
+    }
 
-        // DB 상태와 요청 내용 확인
-        if (existingAccountOpt.isPresent()) {
-            Account existingAccount = existingAccountOpt.get();
-            String newAccountNumber = request.getAccountNumber();
+    // 사용자가 선택한 은행 계좌를 저장
+    @Transactional
+    public AccountResponseDTO linkUserAccount(Long userId, AccountLinkRequestDTO request) {
 
-            // 계좌 '변경' 요청 (DB에 계좌가 있고, 요청으로 다른 계좌번호가 들어옴)
-            if (newAccountNumber != null && !newAccountNumber.equals(existingAccount.getAccountNumber())) {
-                finalAccount = createOrUpdateAccount(userId, request, depositAccounts, Optional.of(existingAccount));
-                log.info("계좌를 새로운 계좌(accountNumber:{})로 변경했습니다.", newAccountNumber);
-            } else {
-                // 단순 잔액 '갱신' 요청 (DB에 계좌가 있고, 요청 계좌번호가 없거나 같음)
-                String currentAccountNumber = existingAccount.getAccountNumber();
-                Map<String, Object> currentAccountData = findAccountInList(depositAccounts, currentAccountNumber);
-
-                Integer latestBalance = Integer.parseInt(String.valueOf(currentAccountData.get("resAccountBalance")));
-                existingAccount.updateBalance(latestBalance); // 잔액만 업데이트
-                finalAccount = existingAccount;
-                log.info("기존 계좌(accountNumber:{})의 잔액을 업데이트했습니다.", currentAccountNumber);
-            }
-        } else {
-            // '최초 연동' 요청 (DB에 계좌가 없음)
-            if (request.getAccountNumber() == null) {
-                throw MoneyjException.of(CodefErrorCode.INITIAL_BANK_ACCOUNT_NOT_FOUND);
-            }
-            finalAccount = createOrUpdateAccount(userId, request, depositAccounts, Optional.empty());
-            log.info("새로운 계좌(accountNumber:{})를 연동했습니다.", request.getAccountNumber());
+        // 이 여행 계획에 이미 연결된 계좌가 있는지 확인
+        if (accountRepository.findByUserIdAndTripPlanId(userId, request.getTripPlanId()).isPresent()) {
+            throw MoneyjException.of(AccountErrorCode.TRIP_PLAN_ACCOUNT_ALREADY_LINKED);
         }
 
-        // 4. 최종 결과를 DTO로 만들어 반환
-        return AccountLinkResponseDTO.builder()
-                .accountId(finalAccount.getAccountId())
-                .accountName(finalAccount.getAccountName())
-                .accountNumberDisplay(maskAdvanced(finalAccount.getAccountNumber()))
-                .balance(finalAccount.getBalance())
+        // 이 계좌번호가 다른 여행에서 이미 사용 중인지 확인
+        if (accountRepository.findByAccountNumber(request.getAccountNumber()).isPresent()) {
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
+        }
+
+        User user = userRepository.findByUserId(userId)
+            .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
+        TripPlan tripPlan = tripPlanRepository.findById(request.getTripPlanId())
+            .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
+
+        Account newAccount = Account.of(
+            user,
+            tripPlan,
+            request.getAccountNumber(),
+            maskAdvanced(request.getAccountNumber()),
+            request.getBalance(),
+            request.getOrganizationCode(),
+            request.getAccountName()
+        );
+
+        // DB에 저장
+        try {
+            accountRepository.save(newAccount);
+        } catch (DataIntegrityViolationException e) {
+            log.warn("계좌 저장 중 데이터 무결성 오류 발생: accountNumber={}", request.getAccountNumber());
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
+        }
+
+        return AccountResponseDTO.builder()
+            .accountId(newAccount.getAccountId())
+            .accountName(newAccount.getAccountName())
+            .accountNumber(maskAdvanced(newAccount.getAccountNumber()))
+            .balance(newAccount.getBalance())
+            .build();
+    }
+
+    // 계좌 변경
+    @Transactional
+    public AccountResponseDTO switchAccount(Long userId, Long accountId, AccountSwitchRequestDTO requestDTO){
+
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+
+        if (!account.getUser().getUserId().equals(userId)) {
+            throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
+        }
+
+        // 다른 여행에 해당 계좌가 사용 중인지 확인
+        Optional<Account> existingAccountWithNewNumber = accountRepository.findByAccountNumber(requestDTO.getAccountNumber());
+        if (existingAccountWithNewNumber.isPresent() && !existingAccountWithNewNumber.get().getAccountId().equals(accountId)){
+            // DB에 해당 계좌번호가 존재하고, 그게 지금 변경하려는 계좌가 아니라면 중복 사용을 뜻함.
+            throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
+        }
+
+        account.switchAccountNumber(
+                requestDTO.getAccountNumber(),
+                maskAdvanced(requestDTO.getAccountNumber()),
+                requestDTO.getBalance(),
+                requestDTO.getOrganizationCode(),
+                requestDTO.getAccountName());
+
+        return AccountResponseDTO.builder()
+                .accountId(account.getAccountId())
+                .accountName(account.getAccountName())
+                .accountNumber(maskAdvanced(account.getAccountNumber()))
+                .balance(account.getBalance())
                 .build();
     }
 
-    // 계좌 생성 또는 전체 업데이트를 처리하는 메서드
-    private Account createOrUpdateAccount(Long userId, AccountLinkRequestDTO request, List<Map<String, Object>> accountList, Optional<Account> accountOpt) {
-        String targetAccountNumber = request.getAccountNumber();
-        Map<String, Object> selectedAccountData = findAccountInList(accountList, targetAccountNumber);
+    // 계좌 삭제
+    @Transactional
+    public void deleteAccount(Long userId, Long accountId) {
 
-        // 저장 전에 동일한 계좌번호가 이미 다른 플랜에서 사용중인지 검사
-        Optional<Account> existingByNumber = accountRepository.findByAccountNumber(targetAccountNumber);
-        if (existingByNumber.isPresent()) {
-            Account found = existingByNumber.get();
+        Account account = accountRepository.findById(accountId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
 
-            // 만약 기존 계좌가 있을 때, 동일한 레코드를 업데이트하는 경우는 허용
-            if (accountOpt.isEmpty() || !found.getAccountId().equals(accountOpt.get().getAccountId())) {
-                throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
-            }
+        if (!account.getUser().getUserId().equals(userId)) {
+            throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
         }
 
-        User user = userRepository.findByUserId(userId).orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
-        TripPlan tripPlan = tripPlanRepository.findById(request.getTripPlanId()).orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
-
-        Integer balance = Integer.parseInt(String.valueOf(selectedAccountData.get("resAccountBalance")));
-
-        // 계좌가 이미 있으면 업데이트, 없으면 새로 생성
-        Account account = accountOpt.orElseGet(
-                () -> Account.of(
-                        user,
-                        tripPlan,
-                        targetAccountNumber,
-                        maskAdvanced(targetAccountNumber),
-                        balance,
-                        request.getOrganizationCode(),
-                        (String) selectedAccountData.get("resAccountName")));
-
-        try {
-            return accountRepository.save(account);
-        } catch (DataIntegrityViolationException e) {
-            // 유니크 제약 위반
-            log.warn("계좌 저장 중 데이터 무결성 오류 발생: accountNumber={}, userId={}, tripPlanId={}", targetAccountNumber, userId, request.getTripPlanId());
-            throw MoneyjException.of(AccountErrorCode.ACCOUNT_ALREADY_IN_USE);
-        }
+        accountRepository.delete(account);
     }
 
-    // 계좌 목록에서 특정 계좌번호를 찾는 메서드
-    private Map<String, Object> findAccountInList(List<Map<String, Object>> accountList, String accountNumber) {
+    // 계좌번호 저장 여부 검사
+    @Transactional(readOnly = true)
+    public boolean checkAccountOwnership(Long userId, String accountNumber) {
 
-        String targetDigits = accountNumber.replaceAll("\\D", "");
+        Optional<Account> account = accountRepository.findByAccountNumber(accountNumber);
 
-        return accountList.stream()
-                .filter(acc -> {
-                    String resAccount = String.valueOf(acc.get("resAccount"));
-                    // 비교 대상(목록의 계좌번호)에서도 숫자만 추출
-                    String resDigits = resAccount.replaceAll("\\D", "");
-                    return targetDigits.equals(resDigits);
-                })
-                .findFirst()
-                .orElseThrow(() -> MoneyjException.of(
-                        AccountErrorCode.ACCOUNT_NOT_FOUND,
-                        AccountErrorCode.ACCOUNT_NOT_FOUND.format(maskAdvanced(accountNumber))));
+        if(account.isPresent() && !account.get().getUser().getUserId().equals(userId)){
+            throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
+        }
+
+        return account.isPresent();
+    }
+
+    // 계좌 수동 업데이트
+    @Transactional
+    public AccountResponseDTO manualAccount(Long userId, Long accId) {
+
+        Account account = accountRepository.findById(accId)
+                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
+
+        if (!account.getUser().getUserId().equals(userId)) {
+            throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
+        }
+
+        syncAccountIfNeeded(account);
+
+        return AccountResponseDTO.builder()
+                .accountId(account.getAccountId())
+                .accountName(account.getAccountName())
+                .accountNumber(maskAdvanced(account.getAccountNumber()))
+                .balance(account.getBalance())
+                .build();
     }
 
     // 계좌의 마지막 업데이트가 3시간 이후일 경우에만 CODEF를 호출해 해당 계좌 잔액을 갱신.
@@ -184,42 +248,6 @@ public class AccountService {
                 });
     }
 
-    @Transactional
-    public AccountLinkResponseDTO manualAccount(Long accId) {
-        Account account = accountRepository.findById(accId)
-                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
-
-        syncAccountIfNeeded(account);
-
-        return AccountLinkResponseDTO.builder()
-                .accountId(account.getAccountId())
-                .accountName(account.getAccountName())
-                .accountNumberDisplay(maskAdvanced(account.getAccountNumber()))
-                .balance(account.getBalance())
-                .build();
-    }
-
-    // 계좌 변경
-    @Transactional
-    public AccountLinkResponseDTO switchAccount(Long userId, Long accountId, AccountSwitchRequestDTO requestDTO){
-
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND));
-
-        if (!account.getUser().getUserId().equals(userId)) {
-            throw MoneyjException.of(AccountErrorCode.ACCESS_DENIED);
-        }
-
-        account.switchAccountNumber(requestDTO.getAccountNumber());
-
-        return AccountLinkResponseDTO.builder()
-                .accountId(account.getAccountId())
-                .accountName(account.getAccountName())
-                .accountNumberDisplay(maskAdvanced(account.getAccountNumber()))
-                .balance(account.getBalance())
-                .build();
-    }
-
     // "1234-****-5678" 형태로 마스킹
     public static String maskAdvanced(String accountNumber) {
         if (accountNumber == null || accountNumber.length() < 8) {
@@ -237,16 +265,4 @@ public class AccountService {
                 .orElseThrow(() -> MoneyjException.of(AccountErrorCode.USER_ACCOUNT_NOT_FOUND));
     }
 
-    @Transactional(readOnly = true)
-    public boolean checkAccountOwnership(String accountNumber) {
-        return accountRepository.findByAccountNumber(accountNumber).isPresent();
-    }
-
-    @Transactional
-    public void deleteAccount(Long accountId) {
-        Account account = accountRepository.findById(accountId)
-                .orElseThrow(() -> MoneyjException.of(AccountErrorCode.NOT_FOUND));
-
-        accountRepository.delete(account);
-    }
 }

@@ -172,7 +172,12 @@ public class TripPlanService {
      * 여행 플랜 수정 (카테고리 제외)
      */
     @Transactional
-    public TripPlanResponseDTO patchPlan(Long planId, TripPlanPatchRequestDTO requestDTO) {
+    public TripPlanResponseDTO patchPlan(Long userId, Long planId, TripPlanPatchRequestDTO requestDTO) {
+
+        // 사용자 검증 (실제 여행 멤버에 속하는지)
+        if (!tripMemberRepository.existsMemberByUserAndPlan(userId, planId)) {
+            throw MoneyjException.of(TripMemberErrorCode.NOT_FOUND);
+        }
 
         TripPlan existingPlan = tripPlanRepository.findById(planId)
                 .orElseThrow(() -> MoneyjException.of(TripPlanErrorCode.NOT_FOUND));
@@ -289,9 +294,12 @@ public class TripPlanService {
     @Transactional
     public CategoryResponseDTO patchCategory(CategoryListRequestDTO request, Long userId) {
 
+        // 사용자 검증 (실제 여행 멤버에 속하는지)
+        if (!tripMemberRepository.existsMemberByUserAndPlan(userId, request.getCategoryDTOList().get(0).getTripPlanId())) {
+            throw MoneyjException.of(TripMemberErrorCode.NOT_FOUND);
+        }
+
         TripPlan tripPlan = tripPlanRepository.findByTripPlanId(request.getCategoryDTOList().get(0).getTripPlanId());
-        User user = userRepository.findByUserId(userId)
-                .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
 
         List<TripMember> tripMemberList = tripMemberRepository.findTripMemberByTripPlanId(request.getCategoryDTOList().get(0).getTripPlanId());
 

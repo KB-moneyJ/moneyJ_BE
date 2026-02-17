@@ -15,7 +15,7 @@ import com.project.moneyj.trip.plan.dto.plan.TripPlanPatchRequestDTO;
 import com.project.moneyj.trip.plan.dto.plan.TripPlanRequestDTO;
 import com.project.moneyj.trip.plan.dto.plan.TripPlanResponseDTO;
 import com.project.moneyj.trip.plan.service.TripPlanService;
-import com.project.moneyj.trip.tip.service.TripTipService;
+import com.project.moneyj.trip.tip.service.SavingTipService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class TripPlanController implements TripPlanControllerApiSpec {
 
     private final TripPlanService tripPlanService;
-    private final TripTipService tripTipService;
+    private final SavingTipService savingTipService;
 
     /**
      * 여행 플랜 생성
@@ -73,7 +73,7 @@ public class TripPlanController implements TripPlanControllerApiSpec {
             @AuthenticationPrincipal CustomOAuth2User customUser
     ) {
         Long userId = customUser.getUserId();
-        tripTipService.checkSavingTip(userId, planId);
+        savingTipService.checkSavingTip(userId, planId);
         TripPlanDetailResponseDTO response = tripPlanService.getTripPlanDetail(planId, userId);
 
         return ResponseEntity.ok(response);
@@ -86,9 +86,11 @@ public class TripPlanController implements TripPlanControllerApiSpec {
     @PatchMapping("/{planId}")
     public ResponseEntity<TripPlanResponseDTO> putPlan(
             @PathVariable Long planId,
-            @RequestBody TripPlanPatchRequestDTO requestDTO
+            @RequestBody TripPlanPatchRequestDTO requestDTO,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     ){
-        TripPlanResponseDTO updatedPlan = tripPlanService.patchPlan(planId, requestDTO);
+        Long userId = customUser.getUserId();
+        TripPlanResponseDTO updatedPlan = tripPlanService.patchPlan(userId, planId, requestDTO);
         return ResponseEntity.ok(updatedPlan);
     }
 

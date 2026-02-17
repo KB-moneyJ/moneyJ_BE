@@ -1,17 +1,31 @@
 package com.project.moneyj.account.dto;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import lombok.*;
 
-@Data
+@Getter
 @Builder
-@NoArgsConstructor
-@AllArgsConstructor
+@NoArgsConstructor(access = AccessLevel.PROTECTED)
+@AllArgsConstructor(access = AccessLevel.PRIVATE)
+/**
+ * 계좌 연결 요청 DTO
+ */
 public class AccountLinkRequestDTO {
 
-    private String organizationCode;
-    private String accountNumber;
+    @NotNull(message = "여행 ID는 필수 입력입니다.")
     private Long tripPlanId;
+
+    @NotBlank(message = "계좌번호는 필수 입력입니다.")
+    @Pattern(regexp = "^[0-9]*$", message = "숫자만 입력하세요!")
+    private String accountNumber;
+
+    @NotNull(message = "잔액은 필수 입력입니다.")
+    private Integer balance;
+
+    @NotBlank(message = "기관 코드는 필수 입력입니다.")
+    private String organizationCode;
+
+    private String accountName;
 }

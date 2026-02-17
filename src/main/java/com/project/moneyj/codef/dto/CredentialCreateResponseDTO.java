@@ -12,7 +12,7 @@ import java.util.Map;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class AccountCreateResponseDTO {
+public class CredentialCreateResponseDTO {
 
     @Data @NoArgsConstructor @AllArgsConstructor @Builder
     public static class Result {

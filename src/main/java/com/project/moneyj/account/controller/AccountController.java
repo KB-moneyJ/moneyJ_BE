@@ -1,43 +1,57 @@
 package com.project.moneyj.account.controller;
 
+import com.project.moneyj.account.dto.AccountInfoDTO;
 import com.project.moneyj.account.dto.AccountLinkRequestDTO;
-import com.project.moneyj.account.dto.AccountLinkResponseDTO;
+import com.project.moneyj.account.dto.AccountResponseDTO;
 import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.account.service.AccountService;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
+import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
+import com.project.moneyj.codef.service.CodefBankService;
 import jakarta.validation.Valid;
+import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
-@RequestMapping("/accounts")
+@RequestMapping("/api/accounts")
 public class AccountController implements AccountControllerApiSpec{
 
     private final AccountService accountService;
 
     /**
-     * 사용자가 선택한 계좌를 저장.
+     * 은행 계좌 목록 조회 및 기관 연결
+     * CODEF를 통해 기관(은행/카드사)에 연결하고, 성공 시 해당 기관의 계좌 목록을 반환
+     * 최초 등록시 커넥티드 ID 발급
+     * '계좌 변경' 시에도 사용
+     */
+    @Override
+    @PostMapping("/connect")
+    public ResponseEntity<List<AccountInfoDTO>> connectAndFetchAccounts(
+        @AuthenticationPrincipal CustomOAuth2User customUser,
+        @RequestBody CredentialCreateRequestDTO.CredentialInput request) {
+
+        Long userId = customUser.getUserId();
+        List<AccountInfoDTO> accounts = accountService.connectInstitutionAndFetchAccounts(userId, request);
+        return ResponseEntity.ok(accounts);
+    }
+
+    /**
+     * 사용자가 선택한 은행 계좌를 저장
+     * 여행별 선택한 계좌를 DB에 저장
      */
     @Override
     @PostMapping("/link")
-    public ResponseEntity<AccountLinkResponseDTO> linkAccount(
+    public ResponseEntity<AccountResponseDTO> linkAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestBody AccountLinkRequestDTO request
+            @RequestBody @Valid AccountLinkRequestDTO request
     ) {
         Long userId = customUser.getUserId();
-        // 서비스로부터 DTO를 직접 받음
-        AccountLinkResponseDTO responseDto = accountService.linkUserAccount(userId, request);
+        AccountResponseDTO responseDto = accountService.linkUserAccount(userId, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(responseDto);
     }
 
@@ -46,7 +60,7 @@ public class AccountController implements AccountControllerApiSpec{
      */
     @Override
     @PatchMapping("/switch/{accountId}")
-    public ResponseEntity<AccountLinkResponseDTO> switchAccount(
+    public ResponseEntity<AccountResponseDTO> switchAccount(
             @AuthenticationPrincipal CustomOAuth2User customUser,
             @PathVariable Long accountId,
             @Valid @RequestBody AccountSwitchRequestDTO accountSwitchRequestDTO
@@ -61,11 +75,13 @@ public class AccountController implements AccountControllerApiSpec{
      */
     @Override
     @DeleteMapping("/{accountId}")
-    public ResponseEntity<Void> deleteAccount(
-            @PathVariable Long accountId
+    public ResponseEntity<String> deleteAccount(
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     ) {
-        accountService.deleteAccount(accountId);
-        return ResponseEntity.noContent().build();
+        Long userId = customUser.getUserId();
+        accountService.deleteAccount(userId, accountId);
+        return ResponseEntity.ok("계좌가 성공적으로 삭제되었습니다.");
     }
 
     /**
@@ -74,9 +90,11 @@ public class AccountController implements AccountControllerApiSpec{
     @Override
     @GetMapping("/check/{accountNumber}")
     public boolean checkAccountOwnership(
-            @PathVariable String accountNumber
+            @PathVariable String accountNumber,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     ) {
-        return accountService.checkAccountOwnership(accountNumber);
+        Long userId = customUser.getUserId();
+        return accountService.checkAccountOwnership(userId, accountNumber);
     }
 
     /**
@@ -84,9 +102,11 @@ public class AccountController implements AccountControllerApiSpec{
      */
     @Override
     @GetMapping("/{accountId}")
-    public ResponseEntity<AccountLinkResponseDTO> manualAccountUpdate(
-            @PathVariable Long accountId
+    public ResponseEntity<AccountResponseDTO> manualAccountUpdate(
+            @PathVariable Long accountId,
+            @AuthenticationPrincipal CustomOAuth2User customUser
     ){
-        return ResponseEntity.ok(accountService.manualAccount(accountId));
+        Long userId = customUser.getUserId();
+        return ResponseEntity.ok(accountService.manualAccount(userId, accountId));
     }
 }
