@@ -1,8 +1,5 @@
 package com.project.moneyj.codef.service;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.moneyj.card.repository.CardRepository;
 import com.project.moneyj.codef.config.CodefProperties;
 import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
@@ -10,16 +7,10 @@ import com.project.moneyj.codef.util.ApiResponseDecoder;
 import com.project.moneyj.codef.util.RsaEncryptor;
 import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.CodefErrorCode;
-import com.project.moneyj.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Service

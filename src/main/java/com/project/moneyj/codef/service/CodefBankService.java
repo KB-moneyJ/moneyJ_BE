@@ -1,6 +1,5 @@
 package com.project.moneyj.codef.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.moneyj.codef.config.CodefProperties;
 import com.project.moneyj.codef.dto.BankAccountListReqDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
@@ -9,9 +8,7 @@ import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.CodefErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
 import java.util.Map;
 
