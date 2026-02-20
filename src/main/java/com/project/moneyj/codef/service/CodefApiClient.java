@@ -1,12 +1,10 @@
 package com.project.moneyj.codef.service;
 
-import com.project.moneyj.codef.config.CodefProperties;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
-import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -17,7 +15,6 @@ public class CodefApiClient {
 
     private final WebClient codefWebClient;
     private final CodefAuthService codefAuthService;
-    private final CodefProperties codefProperties;
 
     /**
      * Codef API POST 요청 실행
