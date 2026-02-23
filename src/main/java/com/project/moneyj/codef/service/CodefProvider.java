@@ -42,6 +42,34 @@ public class CodefProvider {
     private final ObjectMapper objectMapper;
     private final CodefApiClient codefApiClient;
 
+    /**
+     * 유저의 현재 연동 상태(Connected ID, 기관 등록 여부)를 파악하여 신규 발급 / 기관 추가 수행
+     */
+    @Transactional
+    public void connectInstitution(Long userId, CredentialCreateRequestDTO.CredentialInput input) {
+        Optional<CodefConnectedId> existingCid = connectedIdRepository.findByUserId(userId);
+
+        if (existingCid.isEmpty()) {
+            // 1. 아예 처음 온 유저 -> 새로 발급 (Create)
+            log.info("신규 유저입니다. Connected ID 발급 및 기관 등록을 진행합니다.");
+            createConnectedId(userId, input);
+        } else {
+            String cid = existingCid.get().getConnectedId();
+            Optional<CodefInstitution> existingInstitution = codefInstitutionRepository
+                    .findByConnectedIdAndOrganization(cid, input.getOrganization());
+
+            if (existingInstitution.isEmpty()) {
+                // 2. 커넥티드 ID는 있는데 해당 기관은 처음 -> 기관 추가 (Add)
+                log.info("새로운 기관({})을 추가합니다.", input.getOrganization());
+                addCredential(userId, input);
+            } else {
+                // 3. 이미 등록된 기관 -> 새 비밀번호로 업데이트 (Update)
+                log.info("기존에 등록된 기관({})입니다. 인증 정보를 최신화합니다.", input.getOrganization());
+                updateCredential(userId, input);
+            }
+        }
+    }
+
     // 최초 계정 등록 → Connected ID 발급
     // 아이디 비번 입력만 해도 Connected ID 발급
     @Transactional
@@ -85,7 +113,7 @@ public class CodefProvider {
             String errorCode = parsedRes.data().errorList().get(0).code();
             String errorMsg = parsedRes.data().errorList().get(0).message();
 
-            log.error("CODEF 계정 연동 실패! [코드: {}, 메시지: {}]", errorCode, errorMsg);
+            log.error("CODEF 계정 연동 실패 [코드: {}, 메시지: {}]", errorCode, errorMsg);
 
             throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
@@ -118,29 +146,9 @@ public class CodefProvider {
 
         String url = props.getBaseUrl() + "/v1/account/add";
 
-        String rawResponse = codefApiClient.executePost(url, requestBody);
+        CodefCredentialResultDTO data = executeAccountApi(url, credentialInput, requestBody);
 
-        TypeReference<CodefResponseDTO<CodefCredentialResultDTO>> typeRef = new TypeReference<>() {};
-        CodefResponseDTO<CodefCredentialResultDTO> parsedRes = ApiResponseDecoder.decode(rawResponse, typeRef);
-
-        // 에러 처리
-        if (parsedRes != null && parsedRes.data() != null && parsedRes.data().errorList() != null && !parsedRes.data().errorList().isEmpty()) {
-            String errorCode = parsedRes.data().errorList().get(0).code();
-            String errorMsg = parsedRes.data().errorList().get(0).message();
-
-            log.error("CODEF 계정 연동 실패! [코드: {}, 메시지: {}]", errorCode, errorMsg);
-
-            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
-        }
-
-        // 정상적으로 successList가 왔을 때만 DB에 저장
-        if (parsedRes != null && parsedRes.data() != null
-                && parsedRes.data().successList() != null
-                && !parsedRes.data().successList().isEmpty()) {
-            saveOrUpdateInstitution(connectedId, parsedRes.data().successList().get(0));
-        } else {
-            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
-        }
+        saveOrUpdateInstitution(connectedId, data.successList().get(0));
         log.info("CODEF 계정 추가 및 DB 상태 저장을 성공했습니다.");
     }
 
@@ -163,6 +171,29 @@ public class CodefProvider {
         }
 
         return responseDTO.data();
+    }
+
+    // CODEF의 등록된 기관의 비밀번호 등 계정 정보 업데이트
+    @Transactional
+    public void updateCredential(Long userId, CredentialCreateRequestDTO.CredentialInput credentialInput) {
+        String connectedId = connectedIdRepository.findActiveConnectedIdByUserId(userId)
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
+
+        if ("1".equals(credentialInput.getLoginType()) && credentialInput.getPassword() != null) {
+            String encryptedPassword = RsaEncryptor.encryptWithPemPublicKey(credentialInput.getPassword(), props.getPublicKey());
+            credentialInput.setPassword(encryptedPassword);
+        }
+
+        var requestBody = Map.of(
+                "connectedId", connectedId,
+                "accountList", List.of(credentialInput)
+        );
+
+        String url = props.getBaseUrl() + "/v1/account/update";
+        CodefCredentialResultDTO data = executeAccountApi(url, credentialInput, requestBody);
+
+        saveOrUpdateInstitution(connectedId, data.successList().get(0));
+        log.info("CODEF 계정 정보 업데이트를 성공했습니다.");
     }
 
     // CODEF 연결된 계정을 삭제
@@ -218,73 +249,35 @@ public class CodefProvider {
         }
     }
 
-    // CODEF의 등록된 기관의 비밀번호 등 계정 정보 업데이트
-    @Transactional
-    public void updateCredential(Long userId, CredentialCreateRequestDTO.CredentialInput credentialInput) {
-        String connectedId = connectedIdRepository.findActiveConnectedIdByUserId(userId)
-                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
+    // ========== 헬퍼 메소드 ==========
 
-        if ("1".equals(credentialInput.getLoginType()) && credentialInput.getPassword() != null) {
-            String encryptedPassword = RsaEncryptor.encryptWithPemPublicKey(credentialInput.getPassword(), props.getPublicKey());
-            credentialInput.setPassword(encryptedPassword);
+    // add와 update에서 중복되는 암호화, API 파싱, 에러 검사를 통합한 메서드
+    private CodefCredentialResultDTO executeAccountApi(String url, CredentialCreateRequestDTO.CredentialInput input, Map<String, Object> body) {
+
+        // 비밀번호 RSA 암호화
+        if ("1".equals(input.getLoginType()) && input.getPassword() != null) {
+            String enc = RsaEncryptor.encryptWithPemPublicKey(input.getPassword(), props.getPublicKey());
+            input.setPassword(enc);
         }
-
-        var requestBody = Map.of(
-                "connectedId", connectedId,
-                "accountList", List.of(credentialInput)
-        );
-
-        String url = props.getBaseUrl() + "/v1/account/update";
-        String rawResponse = codefApiClient.executePost(url, requestBody);
 
         TypeReference<CodefResponseDTO<CodefCredentialResultDTO>> typeRef = new TypeReference<>() {};
-        CodefResponseDTO<CodefCredentialResultDTO> parsedRes = ApiResponseDecoder.decode(rawResponse, typeRef);
+        CodefCredentialResultDTO data = codefApiClient.fetchAndDecode(url, body, typeRef);
 
-        if (parsedRes != null && parsedRes.data() != null && parsedRes.data().errorList() != null && !parsedRes.data().errorList().isEmpty()) {
-            String errorMsg = parsedRes.data().errorList().get(0).message();
-            log.error("CODEF 계정 업데이트 실패 [메시지: {}]", errorMsg);
-            throw new RuntimeException("기관 연동 정보 업데이트 실패: " + errorMsg);
+        // CODEF errorList 검사
+        if (data != null && data.errorList() != null && !data.errorList().isEmpty()) {
+            String errorCode = data.errorList().get(0).code();
+            String errorMsg = data.errorList().get(0).message();
+            log.error("CODEF 계정 연동 실패! [코드: {}, 메시지: {}]", errorCode, errorMsg);
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
 
-        if (parsedRes != null && parsedRes.data() != null
-                && parsedRes.data().successList() != null
-                && !parsedRes.data().successList().isEmpty()) {
-            saveOrUpdateInstitution(connectedId, parsedRes.data().successList().get(0));
-            log.info("CODEF 계정 정보 업데이트를 성공했습니다.");
-        } else {
-            throw new RuntimeException("기관 연동 업데이트 응답을 확인할 수 없습니다.");
+        // 성공 응답이 없으면 에러
+        if (data == null || data.successList() == null || data.successList().isEmpty()) {
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
+
+        return data;
     }
-
-    /**
-     * 유저의 현재 연동 상태(Connected ID, 기관 등록 여부)를 파악하여 신규 발급 / 기관 추가 수행
-     */
-    @Transactional
-    public void connectInstitution(Long userId, CredentialCreateRequestDTO.CredentialInput input) {
-        Optional<CodefConnectedId> existingCid = connectedIdRepository.findByUserId(userId);
-
-        if (existingCid.isEmpty()) {
-            // 1. 아예 처음 온 유저 -> 새로 발급 (Create)
-            log.info("신규 유저입니다. Connected ID 발급 및 기관 등록을 진행합니다.");
-            createConnectedId(userId, input);
-        } else {
-            String cid = existingCid.get().getConnectedId();
-            Optional<CodefInstitution> existingInstitution = codefInstitutionRepository
-                    .findByConnectedIdAndOrganization(cid, input.getOrganization());
-
-            if (existingInstitution.isEmpty()) {
-                // 2. 커넥티드 ID는 있는데 해당 기관은 처음 -> 기관 추가 (Add)
-                log.info("새로운 기관({})을 추가합니다.", input.getOrganization());
-                addCredential(userId, input);
-            } else {
-                // 3. 이미 등록된 기관 -> 새 비밀번호로 업데이트 (Update)
-                log.info("기존에 등록된 기관({})입니다. 인증 정보를 최신화합니다.", input.getOrganization());
-                updateCredential(userId, input);
-            }
-        }
-    }
-
-    // ========== 헬퍼 메소드 ==========
 
     private CredentialCreateResponseDTO parseAndValidateCreateResponse(String rawResponseBody) {
         try {
