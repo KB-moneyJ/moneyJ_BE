@@ -1,9 +1,9 @@
 package com.project.moneyj.account.service;
 
 import com.project.moneyj.account.domain.Account;
+import com.project.moneyj.account.dto.ExternalAccountDTO;
 import com.project.moneyj.account.repository.AccountRepository;
-import com.project.moneyj.codef.dto.CodefBankDataDTO;
-import com.project.moneyj.codef.service.CodefBankService;
+import com.project.moneyj.account.service.external.AccountProvider;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountSyncScheduler {
 
     private final AccountRepository accountRepository;
-    private final CodefBankService codefBankService;
+    private final AccountProvider accountProvider;
 
     /**
      * 매일 00시, 06시, 12시, 18시에 전체 계좌 스냅샷 동기화
@@ -38,7 +38,7 @@ public class AccountSyncScheduler {
         }
 
         // 캐시
-        Map<String, List<CodefBankDataDTO.CodefBankAccountDTO>> cache = new HashMap<>();
+        Map<String, List<ExternalAccountDTO>> cache = new HashMap<>();
 
         for (Account account : accounts) {
             Long userId = account.getUser().getUserId();
@@ -52,9 +52,9 @@ public class AccountSyncScheduler {
             String key = userId + "|" + orgCode;
 
             // 캐시에 없으면 API 호출 후 저장
-            List<CodefBankDataDTO.CodefBankAccountDTO> depositAccounts = cache.computeIfAbsent(key, k -> {
+            List<ExternalAccountDTO> depositAccounts = cache.computeIfAbsent(key, k -> {
 
-                List<CodefBankDataDTO.CodefBankAccountDTO> res = codefBankService.fetchBankAccounts(userId, orgCode);
+                List<ExternalAccountDTO> res = accountProvider.fetchBankAccounts(userId, orgCode);
 
                 if (res == null || res.isEmpty()) {
                     log.warn("정기 동기화 실패: userId={}, orgCode={} (응답에 계좌 없음)", userId, orgCode);
@@ -67,12 +67,12 @@ public class AccountSyncScheduler {
                 continue;
             }
 
-            Optional<CodefBankDataDTO.CodefBankAccountDTO> match = depositAccounts.stream()
-                    .filter(acc -> accountNumber.equals(acc.resAccount()))
+            Optional<ExternalAccountDTO> match = depositAccounts.stream()
+                    .filter(acc -> accountNumber.equals(acc.accountNumber()))
                     .findFirst();
 
             if (match.isPresent()) {
-                Integer latestBalance = (int) match.get().getSafeBalance();
+                Integer latestBalance = match.get().balance();
                 account.updateBalance(latestBalance);
                 log.debug("정기 동기화: userId={}, account={}, balance={}",
                         userId, accountNumber, latestBalance);
