@@ -24,8 +24,6 @@ public class CodefAccountAdapter implements AccountProvider{
 
     private final CodefProvider codefProvider;
     private final CodefBankService codefBankService;
-    private final CodefConnectedIdRepository codefConnectedIdRepository;
-    private final CodefInstitutionRepository codefInstitutionRepository;
 
     @Override
     public void connectInstitution(Long userId, AccountConnectionRequestDTO request) {
@@ -40,6 +38,7 @@ public class CodefAccountAdapter implements AccountProvider{
                 .password(request.password())
                 .build();
 
+        log.info("입력받은 비밀번호 길이: {}", request.password().length());
         codefProvider.connectInstitution(userId, input);
     }
 

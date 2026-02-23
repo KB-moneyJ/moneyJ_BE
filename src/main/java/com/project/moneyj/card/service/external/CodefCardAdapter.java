@@ -24,8 +24,6 @@ public class CodefCardAdapter implements CardProvider{
 
     private final CodefProvider codefProvider;
     private final CodefCardService codefCardService;
-    private final CodefConnectedIdRepository codefConnectedIdRepository;
-    private final CodefInstitutionRepository codefInstitutionRepository;
 
     @Override
     public void connectInstitution(Long userId, CardConnectionRequestDTO request) {
