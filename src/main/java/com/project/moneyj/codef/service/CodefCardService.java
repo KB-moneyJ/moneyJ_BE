@@ -1,7 +1,11 @@
 package com.project.moneyj.codef.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.project.moneyj.codef.config.CodefProperties;
 import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
+import com.project.moneyj.codef.dto.CodefCardApprovalDTO;
+import com.project.moneyj.codef.dto.CodefCardDTO;
+import com.project.moneyj.codef.dto.CodefResponseDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
 import com.project.moneyj.codef.util.ApiResponseDecoder;
 import com.project.moneyj.codef.util.RsaEncryptor;
@@ -22,8 +26,31 @@ public class CodefCardService {
     private final CodefProperties codefProperties;
     private final CodefConnectedIdRepository codefConnectedIdRepository;
 
+    // 보유 카드 조회
+    public List<CodefCardDTO> fetchCards(Long userId, String organization) {
+        String connectedId = codefConnectedIdRepository.findActiveConnectedIdByUserId(userId)
+                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
+
+        // CODEF 보유카드 목록 조회 API 호출
+        Map<String, Object> body = Map.of(
+                "organization", organization,
+                "connectedId", connectedId
+        );
+
+        String url = codefProperties.getBaseUrl() + "/v1/kr/card/p/account/card-list";
+
+        String rawResponse = codefApiClient.executePost(url, body);
+
+        TypeReference<CodefResponseDTO<List<CodefCardDTO>>> typeRef = new TypeReference<>() {};
+        CodefResponseDTO<List<CodefCardDTO>> responseDTO = ApiResponseDecoder.decode(rawResponse, typeRef);
+
+        log.info("보유 중인 카드 리스트: {}", ApiResponseDecoder.decode(rawResponse));
+
+        return responseDTO.data();
+    }
+
     // 거래 내역 조회(카드)
-    public Map<String, Object> getCardApprovalList(Long userId, CardApprovalRequestDTO req) {
+    public List<CodefCardApprovalDTO> getCardApprovalList(Long userId, CardApprovalRequestDTO req) {
 
         String connectedId = codefConnectedIdRepository.findActiveConnectedIdByUserId(userId)
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
@@ -66,29 +93,16 @@ public class CodefCardService {
                         ? "1" : req.getMemberStoreInfoType());
 
         String url = codefProperties.getBaseUrl() + "/v1/kr/card/p/account/approval-list";
-
         String rawResponse = codefApiClient.executePost(url, body);
 
-        return ApiResponseDecoder.decode(rawResponse);
-    }
+        TypeReference<CodefResponseDTO<List<CodefCardApprovalDTO>>> typeRef = new TypeReference<>() {};
+        CodefResponseDTO<List<CodefCardApprovalDTO>> responseDTO = ApiResponseDecoder.decode(rawResponse, typeRef);
 
-    // 보유 카드 조회
-    public Map<String, Object> fetchCards(Long userId, String organization) {
-        String connectedId = codefConnectedIdRepository.findActiveConnectedIdByUserId(userId)
-                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
+        if (responseDTO == null || !responseDTO.result().isSuccess() || responseDTO.data() == null) {
+            log.error("CODEF 카드 승인 내역 조회 실패");
+            return Collections.emptyList();
+        }
 
-        // CODEF 보유카드 목록 조회 API 호출
-        Map<String, Object> body = Map.of(
-                "organization", organization,
-                "connectedId", connectedId
-        );
-
-        String url = codefProperties.getBaseUrl() + "/v1/kr/card/p/account/card-list";
-
-        String rawResponse = codefApiClient.executePost(url, body);
-
-        log.info("보유 중인 카드 리스트: {}", ApiResponseDecoder.decode(rawResponse));
-
-        return ApiResponseDecoder.decode(rawResponse);
+        return responseDTO.data();
     }
 }

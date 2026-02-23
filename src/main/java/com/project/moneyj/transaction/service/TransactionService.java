@@ -2,6 +2,7 @@ package com.project.moneyj.transaction.service;
 
 import com.project.moneyj.analysis.service.TransactionSummaryService;
 import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
+import com.project.moneyj.codef.dto.CodefCardApprovalDTO;
 import com.project.moneyj.codef.service.CodefCardService;
 import com.project.moneyj.transaction.domain.Transaction;
 import com.project.moneyj.transaction.repository.TransactionRepository;
@@ -22,79 +23,42 @@ public class TransactionService {
     private final TransactionSummaryService transactionSummaryService;
 
     @Transactional
-    public List<Transaction> saveTransactions(User user, List<Map<String, Object>> data)
+    public List<Transaction> saveTransactions(User user, List<CodefCardApprovalDTO> data)
     {
         List<Transaction> transactions = data.stream()
-                .map(raw -> toTransaction(raw, user))
+                .map(dto -> toTransaction(dto, user))
                 .toList();
+
         transactionRepository.saveAll(transactions);
         return transactions;
     }
 
-    public Transaction toTransaction(Map<String, Object> raw, User user) {
-        String resUsedDate = (String) raw.get("resUsedDate");
-        String resUsedTime = (String) raw.get("resUsedTime");
-
-        LocalDateTime usedDateTime = LocalDateTime.parse(
-            resUsedDate + resUsedTime,
-            DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+    public Transaction toTransaction(CodefCardApprovalDTO dto, User user) {
+        return Transaction.of(
+                user,
+                StoreCategoryMapper.mapToCategory(dto.resMemberStoreType()),
+                dto.getUsedDateTime(),
+                dto.getActualAmount(),
+                dto.resMemberStoreName(),
+                dto.resMemberStoreCorpNo(),
+                dto.resMemberStoreAddr(),
+                dto.resMemberStoreNo(),
+                dto.resMemberStoreType(),
+                dto.resApprovalNo(),
+                LocalDateTime.now()
         );
-
-        // 실제 승인/취소 금액 계산
-        String rawUsed = (String) raw.get("resUsedAmount");
-        String rawCancelYN = (String) raw.get("resCancelYN");
-        String rawCancelAmount = (String) raw.get("resCancelAmount");
-
-        int usedAmount = safeParseInt(rawUsed);
-        int cancelAmount = safeParseInt(rawCancelAmount);
-
-        int actualAmount = "0".equals(rawCancelYN)
-            ? usedAmount
-            : (cancelAmount > 0 ? usedAmount - cancelAmount : usedAmount);
-
-        return Transaction.of(user,
-                        StoreCategoryMapper.mapToCategory((String) raw.get("resMemberStoreType")),
-                        usedDateTime,
-                        actualAmount,
-                        (String) raw.get("resMemberStoreName"),
-                        (String) raw.get("resMemberStoreCorpNo"),
-                        (String) raw.get("resMemberStoreAddr"),
-                        (String) raw.get("resMemberStoreNo"),
-                        (String) raw.get("resMemberStoreType"),
-                        (String) raw.get("resApprovalNo"),
-                        LocalDateTime.now());
-    }
-
-    private int safeParseInt(String value) {
-        if (value == null || value.isEmpty()) return 0;
-        try {
-            return (int) Double.parseDouble(value.trim());
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
 
     @Transactional
     public void updateWeeklyTransactions(User user, CardApprovalRequestDTO req) {
 
-        Map<String, Object> response = codefCardService.getCardApprovalList(user.getUserId(), req);
+        List<CodefCardApprovalDTO> response = codefCardService.getCardApprovalList(user.getUserId(), req);
 
-        Object rawData = response.get("data");
-
-        List<Map<String, Object>> data;
-
-        if (rawData instanceof List<?> list) {
-            data = (List<Map<String, Object>>) list;
-        } else if (rawData instanceof Map<?, ?> map) {
-            data = List.of((Map<String, Object>) map);
-        } else {
-            data = List.of();
-        }
-
-        if (data.isEmpty()) {
+        if (response == null || response.isEmpty()) {
             return; // 이번 주에 거래가 없다면 종료
         }
-        List<Transaction> newTransactions = saveTransactions(user, data);
+
+        List<Transaction> newTransactions = saveTransactions(user, response);
 
         transactionSummaryService.updateCurrentMonthSummary(user.getUserId(), newTransactions);
     }

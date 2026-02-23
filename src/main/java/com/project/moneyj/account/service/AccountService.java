@@ -8,6 +8,7 @@ import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
 import com.project.moneyj.account.repository.AccountRepository;
 import com.project.moneyj.codef.domain.CodefConnectedId;
 import com.project.moneyj.codef.domain.CodefInstitution;
+import com.project.moneyj.codef.dto.CodefBankDataDTO;
 import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
 import com.project.moneyj.codef.repository.CodefInstitutionRepository;
@@ -21,11 +22,10 @@ import com.project.moneyj.trip.plan.domain.TripPlan;
 import com.project.moneyj.trip.plan.repository.TripPlanRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
-import java.util.Collections;
+
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -71,22 +71,16 @@ public class AccountService {
         }
 
         // 등록된 계좌 목록 조회
-        Map<String, Object> codefResponse = codefBankService.fetchBankAccounts(userId, input.getOrganization());
+        List<CodefBankDataDTO.CodefBankAccountDTO> codefResponse = codefBankService.fetchBankAccounts(userId, input.getOrganization());
 
-        Map<String, Object> data = (Map<String, Object>) codefResponse.get("data");
-        if (data == null || data.get("resDepositTrust") == null) {
-            return Collections.emptyList();
-        }
-        List<Map<String, Object>> depositAccounts = (List<Map<String, Object>>) data.get("resDepositTrust");
-
-        return depositAccounts.stream()
+        return codefResponse.stream()
             .map(acc -> AccountInfoDTO.builder()
                 .organizationCode(input.getOrganization())
-                .accountName((String) acc.get("resAccountName"))
-                .accountNumber((String) acc.get("resAccount"))
-                .balance(Integer.parseInt(String.valueOf(acc.get("resAccountBalance"))))
+                .accountName(acc.resAccountName())
+                .accountNumber(acc.resAccount())
+                .balance((int) acc.getSafeBalance())
                 .build())
-            .collect(Collectors.toList());
+            .toList();
     }
 
     // 사용자가 선택한 은행 계좌를 저장
@@ -228,23 +222,18 @@ public class AccountService {
         }
 
         // CODEF API 호출
-        Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
+        List<CodefBankDataDTO.CodefBankAccountDTO> codefAccounts = codefBankService.fetchBankAccounts(userId, orgCode);
 
-        Map<String, Object> data = (Map<String, Object>) res.get("data");
-        if (data == null || data.get("resDepositTrust") == null) {
+        if (codefAccounts == null || codefAccounts.isEmpty()) {
             throw MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND);
         }
 
-        List<Map<String, Object>> accountsFromCodef = (List<Map<String, Object>>) data.get("resDepositTrust");
-
         // 현재 Account와 매칭되는 CODEF 계좌 찾아서 업데이트
-        accountsFromCodef.stream()
-                .filter(m -> accountNumber.equals(String.valueOf(m.get("resAccount"))))
+        codefAccounts.stream()
+                .filter(dto -> accountNumber.equals(dto.resAccount()))
                 .findFirst()
-                .ifPresent(map -> {
-
-                    long balanceLong = Long.parseLong(String.valueOf(map.get("resAccountBalance")));
-                    account.updateBalance((int) balanceLong);
+                .ifPresent(dto -> {
+                    account.updateBalance((int) dto.getSafeBalance());
                 });
     }
 

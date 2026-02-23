@@ -2,6 +2,7 @@ package com.project.moneyj.account.service;
 
 import com.project.moneyj.account.domain.Account;
 import com.project.moneyj.account.repository.AccountRepository;
+import com.project.moneyj.codef.dto.CodefBankDataDTO;
 import com.project.moneyj.codef.service.CodefBankService;
 import java.util.Collections;
 import java.util.HashMap;
@@ -36,8 +37,8 @@ public class AccountSyncScheduler {
             return;
         }
 
-        // (최소화용) userId + orgCode 기준으로 CODEF 호출 결과 캐싱
-        Map<String, List<Map<String, Object>>> cache = new HashMap<>();
+        // 캐시
+        Map<String, List<CodefBankDataDTO.CodefBankAccountDTO>> cache = new HashMap<>();
 
         for (Account account : accounts) {
             Long userId = account.getUser().getUserId();
@@ -50,26 +51,28 @@ public class AccountSyncScheduler {
 
             String key = userId + "|" + orgCode;
 
-            List<Map<String, Object>> depositAccounts = cache.computeIfAbsent(key, k -> {
-                Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
-                Map<String, Object> data = (Map<String, Object>) res.get("data");
-                if (data == null || data.get("resDepositTrust") == null) {
+            // 캐시에 없으면 API 호출 후 저장
+            List<CodefBankDataDTO.CodefBankAccountDTO> depositAccounts = cache.computeIfAbsent(key, k -> {
+
+                List<CodefBankDataDTO.CodefBankAccountDTO> res = codefBankService.fetchBankAccounts(userId, orgCode);
+
+                if (res == null || res.isEmpty()) {
                     log.warn("정기 동기화 실패: userId={}, orgCode={} (응답에 계좌 없음)", userId, orgCode);
                     return Collections.emptyList();
                 }
-                return (List<Map<String, Object>>) data.get("resDepositTrust");
+                return res;
             });
 
             if (depositAccounts.isEmpty()) {
                 continue;
             }
 
-            Optional<Map<String, Object>> match = depositAccounts.stream()
-                    .filter(acc -> accountNumber.equals(String.valueOf(acc.get("resAccount"))))
+            Optional<CodefBankDataDTO.CodefBankAccountDTO> match = depositAccounts.stream()
+                    .filter(acc -> accountNumber.equals(acc.resAccount()))
                     .findFirst();
 
             if (match.isPresent()) {
-                Integer latestBalance = Integer.parseInt(String.valueOf(match.get().get("resAccountBalance")));
+                Integer latestBalance = (int) match.get().getSafeBalance();
                 account.updateBalance(latestBalance);
                 log.debug("정기 동기화: userId={}, account={}, balance={}",
                         userId, accountNumber, latestBalance);

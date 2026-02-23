@@ -1,7 +1,10 @@
 package com.project.moneyj.codef.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.project.moneyj.codef.config.CodefProperties;
 import com.project.moneyj.codef.dto.BankAccountListReqDTO;
+import com.project.moneyj.codef.dto.CodefBankDataDTO;
+import com.project.moneyj.codef.dto.CodefResponseDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
 import com.project.moneyj.codef.util.ApiResponseDecoder;
 import com.project.moneyj.exception.MoneyjException;
@@ -10,7 +13,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.util.Map;
+import java.util.Collections;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -22,7 +26,7 @@ public class CodefBankService {
     private final CodefConnectedIdRepository codefConnectedIdRepository;
 
     // 등록된 계좌 목록 조회
-    public Map<String, Object> fetchBankAccounts(Long userId, String organization) {
+    public List<CodefBankDataDTO.CodefBankAccountDTO> fetchBankAccounts(Long userId, String organization) {
         String cid = codefConnectedIdRepository.findByUserId(userId)
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_RECEIVED))
                 .getConnectedId();
@@ -34,11 +38,19 @@ public class CodefBankService {
                 .build();
 
         String url = codefProperties.getBaseUrl() + "/v1/kr/bank/p/account/account-list";
-
         String rawResponse = codefApiClient.executePost(url, req);
 
         log.info("bank account-list raw={}", rawResponse);
 
-        return ApiResponseDecoder.decode(rawResponse);
+        TypeReference<CodefResponseDTO<CodefBankDataDTO>> typeRef = new TypeReference<>() {};
+        CodefResponseDTO<CodefBankDataDTO> responseDTO = ApiResponseDecoder.decode(rawResponse, typeRef);
+
+        if (responseDTO == null || !responseDTO.result().isSuccess()) {
+            log.error("CODEF 계좌 조회 실패: {}", responseDTO != null ? responseDTO.result().message() : "응답 없음");
+            throw MoneyjException.of(CodefErrorCode.BUSINESS_ERROR);
+        }
+
+        List<CodefBankDataDTO.CodefBankAccountDTO> depositAccounts = responseDTO.data().resDepositTrust();
+        return depositAccounts != null ? depositAccounts : Collections.emptyList();
     }
 }

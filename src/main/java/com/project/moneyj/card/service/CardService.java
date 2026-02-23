@@ -8,6 +8,7 @@ import com.project.moneyj.card.dto.CardSwitchRequestDTO;
 import com.project.moneyj.card.repository.CardRepository;
 import com.project.moneyj.codef.domain.CodefConnectedId;
 import com.project.moneyj.codef.domain.CodefInstitution;
+import com.project.moneyj.codef.dto.CodefCardDTO;
 import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
 import com.project.moneyj.codef.repository.CodefInstitutionRepository;
@@ -53,22 +54,19 @@ public class CardService {
             Optional<CodefInstitution> existingInstitution = codefInstitutionRepository
                     .findByConnectedIdAndOrganization(cid, input.getOrganization());
 
+            // connectedId가 있고, 기관 등록이 안되었다면 -> 기관 추가
+            // connectedId가 있고, 기관 등록이 이미 되어있다면 -> 카드 조회로 바로 진행
             if(existingInstitution.isEmpty()) {
-                // connectedId가 있고, 기관 등록이 안되었다면 -> 기관 추가
-                // connectedId가 있고, 기관 등록이 이미 되어있다면 -> 카드 조회로 바로 진행
                 codefProvider.addCredential(userId, input);
             }
         }
 
-        Map<String, Object> codefResponse = codefCardService.fetchCards(userId, input.getOrganization());
+        List<CodefCardDTO> codefResponse = codefCardService.fetchCards(userId, input.getOrganization());
 
-        Object dataObj = codefResponse.get("data");
-        List<Map<String, Object>> cardListFromApi = normalizeToList(dataObj);
-
-        return cardListFromApi.stream()
+        return codefResponse.stream()
                 .map(card -> CardInfoDTO.builder()
-                        .cardName((String) card.get("resCardName"))
-                        .cardNo((String) card.get("resCardNo"))
+                        .cardName(card.resCardName())
+                        .cardNo(card.resCardNo())
                         .organizationCode(input.getOrganization())
                         .build())
                 .collect(Collectors.toList());
@@ -131,20 +129,4 @@ public class CardService {
         // 로컬 삭제
         cardRepository.delete(card);
     }
-
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> normalizeToList(Object obj) {
-        if (obj == null) return List.of();
-
-        if (obj instanceof List<?> list) {
-            return (List<Map<String, Object>>) list;
-        }
-
-        if (obj instanceof Map<?, ?> map) {
-            return List.of((Map<String, Object>) map);
-        }
-
-        return List.of();
-    }
-
 }

@@ -5,9 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.moneyj.codef.config.CodefProperties;
 import com.project.moneyj.codef.domain.CodefConnectedId;
 import com.project.moneyj.codef.domain.CodefInstitution;
-import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
-import com.project.moneyj.codef.dto.CredentialCreateResponseDTO;
-import com.project.moneyj.codef.dto.CredentialDeleteRequestDTO;
+import com.project.moneyj.codef.dto.*;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
 import com.project.moneyj.codef.repository.CodefInstitutionRepository;
 import com.project.moneyj.codef.util.ApiResponseDecoder;
@@ -79,10 +77,13 @@ public class CodefProvider {
         connectedIdRepository.flush();
 
         // 기관 정보 저장
-        Map<String, Object> responseMap = parseCodefResponse(rawResponseBody);
-        List<Map<String, Object>> successList = (List<Map<String, Object>>) ((Map<String, Object>) responseMap.get("data")).get("successList");
-        if (successList != null && !successList.isEmpty()) {
-            saveOrUpdateInstitution(connectedId, successList.get(0));
+        TypeReference<CodefResponseDTO<CodefCredentialResultDTO>> typeRef = new TypeReference<>() {};
+        CodefResponseDTO<CodefCredentialResultDTO> parsedRes = ApiResponseDecoder.decode(rawResponseBody, typeRef);
+
+        if (parsedRes != null && parsedRes.data() != null
+                && parsedRes.data().successList() != null
+                && !parsedRes.data().successList().isEmpty()) {
+            saveOrUpdateInstitution(connectedId, parsedRes.data().successList().get(0));
         }
     }
 
@@ -106,18 +107,20 @@ public class CodefProvider {
 
         String rawResponse = codefApiClient.executePost(url, requestBody);
 
-        Map<String, Object> responseMap = parseCodefResponse(rawResponse);
-        List<Map<String, Object>> successList = (List<Map<String, Object>>) ((Map<String, Object>) responseMap.get("data")).get("successList");
+        TypeReference<CodefResponseDTO<CodefCredentialResultDTO>> typeRef = new TypeReference<>() {};
+        CodefResponseDTO<CodefCredentialResultDTO> parsedRes = ApiResponseDecoder.decode(rawResponse, typeRef);
 
-        if (successList != null && !successList.isEmpty()) {
-            saveOrUpdateInstitution(connectedId, successList.get(0));
+        if (parsedRes != null && parsedRes.data() != null
+                && parsedRes.data().successList() != null
+                && !parsedRes.data().successList().isEmpty()) {
+            saveOrUpdateInstitution(connectedId, parsedRes.data().successList().get(0));
         }
         log.info("CODEF 계정 추가 및 DB 상태 저장을 성공했습니다.");
     }
 
     // 계정 목록 조회
     @Transactional(readOnly = true)
-    public Map<String, Object> listCredentials(Long userId) {
+    public CodefCredentialListDTO listCredentials(Long userId) {
         var cid = connectedIdRepository.findByUserId(userId)
                 .orElseThrow(() -> new IllegalStateException("Connected ID 없음")).getConnectedId();
 
@@ -125,7 +128,15 @@ public class CodefProvider {
         String url = props.getBaseUrl() + "/v1/account/list";
 
         String rawResponse = codefApiClient.executePost(url, body);
-        return ApiResponseDecoder.decode(rawResponse);
+
+        TypeReference<CodefResponseDTO<CodefCredentialListDTO>> typeRef = new TypeReference<>() {};
+        CodefResponseDTO<CodefCredentialListDTO> responseDTO = ApiResponseDecoder.decode(rawResponse, typeRef);
+
+        if (responseDTO == null || !responseDTO.result().isSuccess()) {
+            throw MoneyjException.of(CodefErrorCode.BUSINESS_ERROR);
+        }
+
+        return responseDTO.data();
     }
 
     // CODEF 연결된 계정을 삭제
@@ -167,11 +178,10 @@ public class CodefProvider {
                 .block();
 
         try {
-            String decodedResponse = URLDecoder.decode(rawResponse, StandardCharsets.UTF_8);
-            Map<String, Object> responseMap = objectMapper.readValue(decodedResponse, new TypeReference<>() {});
-            Map<String, Object> result = (Map<String, Object>) responseMap.get("result");
+            TypeReference<CodefResponseDTO<Object>> typeRef = new TypeReference<>() {};
+            CodefResponseDTO<Object> responseDTO = ApiResponseDecoder.decode(rawResponse, typeRef);
 
-            if ("CF-00000".equals(result.get("code"))) {
+            if (responseDTO != null && responseDTO.result().isSuccess()) {
                 codefInstitutionRepository.delete(institutionToDelete);
                 log.info("내부 DB에서 기관({}) 정보를 삭제했습니다.", organizationCode);
             } else {
@@ -211,9 +221,12 @@ public class CodefProvider {
         }
     }
 
-    private void saveOrUpdateInstitution(String connectedId, Map<String, Object> successInfo) {
-        String organization = (String) successInfo.get("organization");
-        String loginIdMasked = (String) successInfo.get("id");
+    private void saveOrUpdateInstitution(String connectedId, CodefCredentialResultDTO.CodefCredentialSuccessDTO successInfo) {
+        String organization = successInfo.organization();
+
+        String loginIdMasked = successInfo.id() != null ? successInfo.id() : "";
+        String loginType = successInfo.loginType() != null && !successInfo.loginType().isBlank()
+                ? successInfo.loginType() : "0";
 
         CodefConnectedId codefConnectedId = connectedIdRepository.findCodefConnectedIdByConnectedId(connectedId)
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
@@ -223,34 +236,17 @@ public class CodefProvider {
         if (existingOpt.isPresent()) {
             CodefInstitution institution = existingOpt.get();
             institution.updateConnectionStatus(
-                    String.valueOf(successInfo.get("loginType")), "CONNECTED",
-                    (String) successInfo.get("code"), (String) successInfo.get("message"), loginIdMasked
+                    loginType, "CONNECTED",
+                    successInfo.code(), successInfo.message(), loginIdMasked
             );
         } else {
             CodefInstitution newInstitution = CodefInstitution.of(
                     codefConnectedId, connectedId, organization,
-                    String.valueOf(successInfo.get("loginType")), loginIdMasked, "CONNECTED",
-                    LocalDateTime.now(), (String) successInfo.get("code"),
-                    (String) successInfo.get("message"), null, null
+                    loginType, loginIdMasked, "CONNECTED",
+                    LocalDateTime.now(), successInfo.code(),
+                    successInfo.message(), null, null
             );
             codefInstitutionRepository.save(newInstitution);
-        }
-    }
-
-    private Map<String, Object> parseCodefResponse(String rawResponse) {
-        try {
-            String decodedResponse = URLDecoder.decode(rawResponse, StandardCharsets.UTF_8);
-            Map<String, Object> responseMap = objectMapper.readValue(decodedResponse, new TypeReference<>() {});
-            Map<String, Object> result = (Map<String, Object>) responseMap.get("result");
-
-            if ("CF-00000".equals(result.get("code"))) {
-                return responseMap;
-            } else {
-                throw MoneyjException.of(CodefErrorCode.BUSINESS_ERROR);
-            }
-        } catch (Exception e) {
-            log.error("Failed to process CODEF create response. Raw body: {}", rawResponse, e);
-            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
     }
 }
