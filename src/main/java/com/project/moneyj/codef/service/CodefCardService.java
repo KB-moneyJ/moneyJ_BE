@@ -44,9 +44,23 @@ public class CodefCardService {
         TypeReference<CodefResponseDTO<List<CodefCardDTO>>> typeRef = new TypeReference<>() {};
         CodefResponseDTO<List<CodefCardDTO>> responseDTO = ApiResponseDecoder.decode(rawResponse, typeRef);
 
+        // 응답 코드가 성공(CF-00000)이 아니면 바로 차단
+        if (responseDTO == null || !responseDTO.result().isSuccess()) {
+            log.error("CODEF 보유 카드 조회 실패: {}", responseDTO != null ? responseDTO.result().message() : "응답 없음");
+            throw new RuntimeException("카드 조회 실패: " + (responseDTO != null ? responseDTO.result().message() : ""));
+        }
+
+        // data가 비어있으면 안전하게 빈 리스트 반환
+        if (responseDTO.data() == null || responseDTO.data().isEmpty()) {
+            return Collections.emptyList();
+        }
+
         log.info("보유 중인 카드 리스트: {}", ApiResponseDecoder.decode(rawResponse));
 
-        return responseDTO.data();
+        // 빈 객체({})가 들어와서 null 밭이 된 DTO가 있다면 필터링g
+        return responseDTO.data().stream()
+                .filter(card -> card.resCardNo() != null && !card.resCardNo().isBlank())
+                .toList();
     }
 
     // 거래 내역 조회(카드)
