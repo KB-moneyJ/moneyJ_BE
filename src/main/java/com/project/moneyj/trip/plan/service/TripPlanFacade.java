@@ -46,7 +46,7 @@ public class TripPlanFacade {
         return new TripPlanResponseDTO(tripPlan.getTripPlanId(), "여행 플랜 생성 완료");
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public TripPlanDetailResponseDTO getTripPlanDetail(Long planId, Long userId) {
         savingTipService.checkSavingTip(userId, planId);
 
