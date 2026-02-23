@@ -5,7 +5,6 @@ import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.TripPlanErrorCode;
 import com.project.moneyj.openai.util.PromptLoader;
 import com.project.moneyj.trip.member.domain.TripMember;
-import com.project.moneyj.trip.member.repository.TripMemberRepository;
 import com.project.moneyj.trip.plan.domain.TripPlan;
 import com.project.moneyj.trip.plan.dto.TripBudgetRequestDTO;
 import com.project.moneyj.trip.plan.dto.TripBudgetResponseDTO;
@@ -30,7 +29,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class TripPlanService {
     private final TripPlanRepository tripPlanRepository;
     private final TripPlanQuerydslRepository tripPlanQuerydslRepository;
-    private final TripMemberRepository tripMemberRepository;
 
     private final ChatClient chatClient;
 
