@@ -1,7 +1,6 @@
 package com.project.moneyj.trip.member.domain;
 
 import com.project.moneyj.common.BaseTimeEntity;
-import com.project.moneyj.trip.plan.domain.Category;
 import com.project.moneyj.trip.plan.domain.TripPlan;
 import com.project.moneyj.trip.tip.domain.TripSavingPhrase;
 import com.project.moneyj.user.domain.User;
@@ -93,10 +92,14 @@ public class TripMember extends BaseTimeEntity {
         tripPlan.getTripMemberList().add(this);
     }
 
-
-    public void switchIsConsumed(boolean consumed) {
-        for (Category category : categoryList) {
-            category.changeConsumptionStatus(consumed);
-        }
+    public void addCategory(String name, Integer amount, TripPlan tripPlan) {
+        Category category = Category.of(
+            name,
+            amount,
+            false,
+            tripPlan,
+            this
+        );
+        this.categoryList.add(category);
     }
 }

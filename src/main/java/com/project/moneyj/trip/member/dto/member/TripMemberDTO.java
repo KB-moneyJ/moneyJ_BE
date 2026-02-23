@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.member.dto;
+package com.project.moneyj.trip.member.dto.member;
 
 import com.project.moneyj.trip.member.domain.TripMember;
 import lombok.AllArgsConstructor;

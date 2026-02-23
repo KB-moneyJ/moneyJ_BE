@@ -1,6 +1,7 @@
 package com.project.moneyj.trip.service;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -8,9 +9,10 @@ import static org.mockito.Mockito.verify;
 import com.project.moneyj.account.domain.Account;
 import com.project.moneyj.account.repository.AccountRepository;
 import com.project.moneyj.account.service.AccountService;
+import com.project.moneyj.trip.member.repository.CategoryRepository;
+import com.project.moneyj.trip.member.repository.TripMemberRepository;
 import com.project.moneyj.trip.member.service.TripMemberService;
 import com.project.moneyj.trip.plan.domain.TripPlan;
-import com.project.moneyj.trip.plan.repository.CategoryRepository;
 import com.project.moneyj.trip.plan.repository.TripPlanRepository;
 import com.project.moneyj.user.domain.Role;
 import com.project.moneyj.user.domain.User;
@@ -41,6 +43,10 @@ class TripMemberServiceTest {
 
     @Mock
     private AccountRepository accountRepository;
+
+    @Mock
+    private TripMemberRepository tripMemberRepository;
+
     @Mock
     private AccountService accountService;
 
@@ -67,17 +73,20 @@ class TripMemberServiceTest {
                 3, "France", "FR", "Paris", 5, 4,
                 tripStartDate, tripEndDate, 3000000, mockStartDate, mockTargetDate
         );
+
+        Long userId = 1L;
         User user = User.of("mmm", "mmmmmm@MMMMMM", "FKEOPSKFDPOFKE", Role.ROLE_USER);
 
         Account staleAccount = Account.of(user, tripPlan, "1234", "mask", 1000, "004", "name");
         Instant fourHoursAgo = fixedNow.minus(Duration.ofHours(4));
         ReflectionTestUtils.setField(staleAccount, "updatedAt", fourHoursAgo);
 
+        given(tripMemberRepository.existsMemberByUserAndPlan(anyLong(), anyLong())).willReturn(true);
         given(tripPlanRepository.findById(tripPlanId)).willReturn(Optional.of(tripPlan));
         given(accountRepository.findByTripPlanId(tripPlanId)).willReturn(List.of(staleAccount));
         given(categoryRepository.findByTripPlanId(tripPlanId)).willReturn(Collections.emptyList());
 
-        tripMemberService.getUserBalances(user.getUserId(), tripPlanId);
+        tripMemberService.getUserBalances(userId, tripPlanId);
 
         verify(accountService, times(1)).syncAccountIfNeeded(staleAccount);
     }
@@ -101,17 +110,20 @@ class TripMemberServiceTest {
                 3, "France", "FR", "Paris", 5, 4,
                 tripStartDate, tripEndDate, 3000000, mockStartDate, mockTargetDate
         );
+
+        Long userId = 1L;
         User user = User.of("mmm", "mmmmmm@MMMMMM", "FKEOPSKFDPOFKE", Role.ROLE_USER);
 
         Account freshAccount = Account.of(user, tripPlan, "1234", "mask", 1000, "004", "name");
         Instant oneHourAgo = fixedNow.minus(Duration.ofHours(1));
         ReflectionTestUtils.setField(freshAccount, "updatedAt", oneHourAgo);
 
+        given(tripMemberRepository.existsMemberByUserAndPlan(anyLong(), anyLong())).willReturn(true);
         given(tripPlanRepository.findById(tripPlanId)).willReturn(Optional.of(tripPlan));
         given(accountRepository.findByTripPlanId(tripPlanId)).willReturn(List.of(freshAccount));
         given(categoryRepository.findByTripPlanId(tripPlanId)).willReturn(Collections.emptyList());
 
-        tripMemberService.getUserBalances(user.getUserId(), tripPlanId);
+        tripMemberService.getUserBalances(userId, tripPlanId);
 
         verify(accountService, times(0)).syncAccountIfNeeded(any());
     }
