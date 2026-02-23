@@ -13,9 +13,9 @@ public interface TripSavingPhraseRepository extends JpaRepository<TripSavingPhra
     @Query("""
             select tsp.content
             from TripSavingPhrase tsp
-            where tsp.tripMember.user.userId = :userId
-            """)
-    List<String> findAllContentByMemberId(@Param("userId") Long userId);
+            where tsp.tripMember.tripMemberId = :tripMemberId
+    """)
+    List<String> findAllContentByTripMemberId(@Param("tripMemberId") Long tripMemberId);
 
     @Query("""
     select (count(tsp) > 0)

@@ -51,8 +51,8 @@ public class SavingTipService {
      * 저축팁 리스트 조회
      */
     @Transactional(readOnly = true)
-    public List<String> getSavingsTips(Long userId) {
-        return tripSavingPhraseRepository.findAllContentByMemberId(userId);
+    public List<String> getSavingsTips(Long memberId) {
+        return tripSavingPhraseRepository.findAllContentByTripMemberId(memberId);
     }
 
     /**
