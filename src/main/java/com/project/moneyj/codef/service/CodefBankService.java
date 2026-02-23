@@ -31,26 +31,17 @@ public class CodefBankService {
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_RECEIVED))
                 .getConnectedId();
 
-        BankAccountListReqDTO req = BankAccountListReqDTO.builder()
+        BankAccountListReqDTO body = BankAccountListReqDTO.builder()
                 .countryCode("KR").businessType("BK").clientType("P")
                 .organization(organization)
                 .connectedId(cid)
                 .build();
 
         String url = codefProperties.getBaseUrl() + "/v1/kr/bank/p/account/account-list";
-        String rawResponse = codefApiClient.executePost(url, req);
+        CodefBankDataDTO data = codefApiClient.fetchAndDecode(url, body, new TypeReference<>() {});
 
-        log.info("bank account-list raw={}", rawResponse);
-
-        TypeReference<CodefResponseDTO<CodefBankDataDTO>> typeRef = new TypeReference<>() {};
-        CodefResponseDTO<CodefBankDataDTO> responseDTO = ApiResponseDecoder.decode(rawResponse, typeRef);
-
-        if (responseDTO == null || !responseDTO.result().isSuccess()) {
-            log.error("CODEF 계좌 조회 실패: {}", responseDTO != null ? responseDTO.result().message() : "응답 없음");
-            throw MoneyjException.of(CodefErrorCode.BUSINESS_ERROR);
-        }
-
-        List<CodefBankDataDTO.CodefBankAccountDTO> depositAccounts = responseDTO.data().resDepositTrust();
-        return depositAccounts != null ? depositAccounts : Collections.emptyList();
+        return data != null && data.resDepositTrust() != null
+                ? data.resDepositTrust()
+                : Collections.emptyList();
     }
 }

@@ -39,26 +39,14 @@ public class CodefCardService {
 
         String url = codefProperties.getBaseUrl() + "/v1/kr/card/p/account/card-list";
 
-        String rawResponse = codefApiClient.executePost(url, body);
+        List<CodefCardDTO> data = codefApiClient.fetchAndDecode(url, body, new TypeReference<>() {});
 
-        TypeReference<CodefResponseDTO<List<CodefCardDTO>>> typeRef = new TypeReference<>() {};
-        CodefResponseDTO<List<CodefCardDTO>> responseDTO = ApiResponseDecoder.decode(rawResponse, typeRef);
-
-        // 응답 코드가 성공(CF-00000)이 아니면 바로 차단
-        if (responseDTO == null || !responseDTO.result().isSuccess()) {
-            log.error("CODEF 보유 카드 조회 실패: {}", responseDTO != null ? responseDTO.result().message() : "응답 없음");
-            throw new RuntimeException("카드 조회 실패: " + (responseDTO != null ? responseDTO.result().message() : ""));
-        }
-
-        // data가 비어있으면 안전하게 빈 리스트 반환
-        if (responseDTO.data() == null || responseDTO.data().isEmpty()) {
+        if (data == null || data.isEmpty()) {
             return Collections.emptyList();
         }
 
-        log.info("보유 중인 카드 리스트: {}", ApiResponseDecoder.decode(rawResponse));
-
-        // 빈 객체({})가 들어와서 null 밭이 된 DTO가 있다면 필터링g
-        return responseDTO.data().stream()
+        // 빈 객체({})가 들어와서 null 밭이 된 DTO가 있다면 필터링
+        return data.stream()
                 .filter(card -> card.resCardNo() != null && !card.resCardNo().isBlank())
                 .toList();
     }
@@ -107,16 +95,8 @@ public class CodefCardService {
                         ? "1" : req.getMemberStoreInfoType());
 
         String url = codefProperties.getBaseUrl() + "/v1/kr/card/p/account/approval-list";
-        String rawResponse = codefApiClient.executePost(url, body);
+        List<CodefCardApprovalDTO> data = codefApiClient.fetchAndDecode(url, body, new TypeReference<>() {});
 
-        TypeReference<CodefResponseDTO<List<CodefCardApprovalDTO>>> typeRef = new TypeReference<>() {};
-        CodefResponseDTO<List<CodefCardApprovalDTO>> responseDTO = ApiResponseDecoder.decode(rawResponse, typeRef);
-
-        if (responseDTO == null || !responseDTO.result().isSuccess() || responseDTO.data() == null) {
-            log.error("CODEF 카드 승인 내역 조회 실패");
-            return Collections.emptyList();
-        }
-
-        return responseDTO.data();
+        return data != null ? data : Collections.emptyList();
     }
 }
