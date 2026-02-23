@@ -1,16 +1,14 @@
 package com.project.moneyj.transaction.service.event;
 
-
 import com.project.moneyj.analysis.service.TransactionSummaryService;
-import com.project.moneyj.codef.dto.CodefCardApprovalDTO;
-import com.project.moneyj.codef.service.CodefCardService;
 import com.project.moneyj.transaction.domain.Transaction;
 import com.project.moneyj.transaction.domain.event.TransactionRequestEvent;
+import com.project.moneyj.transaction.dto.ExternalTransactionDTO;
 import com.project.moneyj.transaction.service.TransactionService;
+import com.project.moneyj.transaction.service.external.TransactionProvider;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -22,8 +20,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TransactionEventListener {
     private final UserRepository userRepository;
-    private final CodefCardService codefCardService;
     private final TransactionService transactionService;
+    private final TransactionProvider transactionProvider;
     private final TransactionSummaryService transactionSummaryService;
 
     @Async("transactionExecutor")
@@ -34,7 +32,7 @@ public class TransactionEventListener {
             .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
 
         // 외부 API 호출
-        List<CodefCardApprovalDTO> response = codefCardService.getCardApprovalList(user.getUserId(), event.getRequest());
+        List<ExternalTransactionDTO> response = transactionProvider.fetchTransactions(user.getUserId(), event.getRequest());
 
         if (response == null || response.isEmpty()) {
             return; // 이번 주에 거래가 없다면 종료

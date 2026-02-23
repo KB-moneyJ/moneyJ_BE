@@ -2,6 +2,7 @@ package com.project.moneyj.transaction.controller;
 
 import com.project.moneyj.auth.dto.CustomOAuth2User;
 import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
+import com.project.moneyj.transaction.dto.TransactionRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -20,7 +21,7 @@ public interface TransactionControllerApiSpec {
     })
     ResponseEntity<Void> saveCardTransactions(
             @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestBody CardApprovalRequestDTO req
+            @RequestBody TransactionRequestDTO request
     );
 
 }

@@ -1,16 +1,14 @@
 package com.project.moneyj.transaction.service;
 
 import com.project.moneyj.analysis.service.TransactionSummaryService;
-import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
-import com.project.moneyj.codef.dto.CodefCardApprovalDTO;
-import com.project.moneyj.codef.service.CodefCardService;
 import com.project.moneyj.transaction.domain.Transaction;
+import com.project.moneyj.transaction.dto.ExternalTransactionDTO;
+import com.project.moneyj.transaction.dto.TransactionRequestDTO;
 import com.project.moneyj.transaction.repository.TransactionRepository;
+import com.project.moneyj.transaction.service.external.TransactionProvider;
 import com.project.moneyj.user.domain.User;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,11 +17,11 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TransactionService {
     private final TransactionRepository transactionRepository;
-    private final CodefCardService codefCardService;
+    private final TransactionProvider transactionProvider;
     private final TransactionSummaryService transactionSummaryService;
 
     @Transactional
-    public List<Transaction> saveTransactions(User user, List<CodefCardApprovalDTO> data)
+    public List<Transaction> saveTransactions(User user, List<ExternalTransactionDTO> data)
     {
         List<Transaction> transactions = data.stream()
                 .map(dto -> toTransaction(dto, user))
@@ -33,26 +31,26 @@ public class TransactionService {
         return transactions;
     }
 
-    public Transaction toTransaction(CodefCardApprovalDTO dto, User user) {
+    public Transaction toTransaction(ExternalTransactionDTO dto, User user) {
         return Transaction.of(
                 user,
-                StoreCategoryMapper.mapToCategory(dto.resMemberStoreType()),
-                dto.getUsedDateTime(),
-                dto.getActualAmount(),
-                dto.resMemberStoreName(),
-                dto.resMemberStoreCorpNo(),
-                dto.resMemberStoreAddr(),
-                dto.resMemberStoreNo(),
-                dto.resMemberStoreType(),
-                dto.resApprovalNo(),
+                StoreCategoryMapper.mapToCategory(dto.storeType()),
+                dto.usedDateTime(),
+                dto.actualAmount(),
+                dto.storeName(),
+                dto.storeCorpNo(),
+                dto.storeAddr(),
+                dto.storeNo(),
+                dto.storeType(),
+                dto.approvalNo(),
                 LocalDateTime.now()
         );
     }
 
     @Transactional
-    public void updateWeeklyTransactions(User user, CardApprovalRequestDTO req) {
+    public void updateWeeklyTransactions(User user, TransactionRequestDTO request) {
 
-        List<CodefCardApprovalDTO> response = codefCardService.getCardApprovalList(user.getUserId(), req);
+        List<ExternalTransactionDTO> response = transactionProvider.fetchTransactions(user.getUserId(), request);
 
         if (response == null || response.isEmpty()) {
             return; // 이번 주에 거래가 없다면 종료
