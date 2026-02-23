@@ -40,22 +40,7 @@ public class CodefCardAdapter implements CardProvider{
                 .password(request.password())
                 .build();
 
-        Optional<CodefConnectedId> existingCid = codefConnectedIdRepository.findByUserId(userId);
-
-        if (existingCid.isEmpty()) {
-            codefProvider.createConnectedId(userId, input);
-        } else {
-            String cid = existingCid.get().getConnectedId();
-            Optional<CodefInstitution> existingInstitution = codefInstitutionRepository
-                    .findByConnectedIdAndOrganization(cid, input.getOrganization());
-
-            if (existingInstitution.isEmpty()) {
-                codefProvider.addCredential(userId, input);
-            } else{
-                codefProvider.updateCredential(userId, input);
-                log.info("기존 기관 연동 정보가 존재하여, 전달받은 새 비밀번호로 계정 정보를 업데이트했습니다. (기관: {})", input.getOrganization());
-            }
-        }
+        codefProvider.connectInstitution(userId, input);
     }
 
     @Override
