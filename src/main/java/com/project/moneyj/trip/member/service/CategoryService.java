@@ -67,7 +67,7 @@ public class CategoryService {
     /**
      * 여행 플랜 카테고리 목표 달성 조회
      */
-    @Transactional
+    @Transactional(readOnly = true)
     public List<CategoryDTO> getIsConsumed(Long planId, Long userId) {
 
         TripPlan tripPlan = tripPlanRepository.findByTripPlanId(planId);
