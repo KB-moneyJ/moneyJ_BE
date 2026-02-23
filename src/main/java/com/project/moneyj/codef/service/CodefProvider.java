@@ -87,7 +87,7 @@ public class CodefProvider {
 
             log.error("CODEF 계정 연동 실패! [코드: {}, 메시지: {}]", errorCode, errorMsg);
 
-            throw new RuntimeException("기관 연동 실패: " + errorMsg); // TODO 적절한 예외로 변경
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
 
         // 정상적으로 successList가 왔을 때만 DB에 저장
@@ -96,7 +96,7 @@ public class CodefProvider {
                 && !parsedRes.data().successList().isEmpty()) {
             saveOrUpdateInstitution(connectedId, parsedRes.data().successList().get(0));
         } else {
-            throw new RuntimeException("기관 연동 응답을 확인할 수 없습니다."); // TODO 적절한 예외로 변경
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
     }
 
@@ -130,8 +130,7 @@ public class CodefProvider {
 
             log.error("CODEF 계정 연동 실패! [코드: {}, 메시지: {}]", errorCode, errorMsg);
 
-            // 에러를 무시하지 말고 무조건 던져서 흐름을 끊어야 해!
-            throw new RuntimeException("기관 연동 실패: " + errorMsg); // TODO 적절한 예외로 변경
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
 
         // 정상적으로 successList가 왔을 때만 DB에 저장
@@ -140,7 +139,7 @@ public class CodefProvider {
                 && !parsedRes.data().successList().isEmpty()) {
             saveOrUpdateInstitution(connectedId, parsedRes.data().successList().get(0));
         } else {
-            throw new RuntimeException("기관 연동 응답을 확인할 수 없습니다."); // TODO 적절한 예외로 변경
+            throw MoneyjException.of(CodefErrorCode.RESPONSE_PARSE_FAILED);
         }
         log.info("CODEF 계정 추가 및 DB 상태 저장을 성공했습니다.");
     }
@@ -241,7 +240,6 @@ public class CodefProvider {
         TypeReference<CodefResponseDTO<CodefCredentialResultDTO>> typeRef = new TypeReference<>() {};
         CodefResponseDTO<CodefCredentialResultDTO> parsedRes = ApiResponseDecoder.decode(rawResponse, typeRef);
 
-        // 🚨 에러 리스트가 있는지 최우선으로 검사 (침묵의 에러 방지)
         if (parsedRes != null && parsedRes.data() != null && parsedRes.data().errorList() != null && !parsedRes.data().errorList().isEmpty()) {
             String errorMsg = parsedRes.data().errorList().get(0).message();
             log.error("CODEF 계정 업데이트 실패 [메시지: {}]", errorMsg);
