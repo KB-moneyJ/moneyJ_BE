@@ -48,22 +48,20 @@ public class CodefProvider {
     @Transactional
     public void connectInstitution(Long userId, CredentialCreateRequestDTO.CredentialInput input) {
         Optional<CodefConnectedId> existingCid = connectedIdRepository.findByUserId(userId);
-
         if (existingCid.isEmpty()) {
-            // 1. 아예 처음 온 유저 -> 새로 발급 (Create)
+            // 신규 유저 -> 새로 발급
             log.info("신규 유저입니다. Connected ID 발급 및 기관 등록을 진행합니다.");
             createConnectedId(userId, input);
         } else {
             String cid = existingCid.get().getConnectedId();
             Optional<CodefInstitution> existingInstitution = codefInstitutionRepository
                     .findByConnectedIdAndOrganization(cid, input.getOrganization());
-
             if (existingInstitution.isEmpty()) {
-                // 2. 커넥티드 ID는 있는데 해당 기관은 처음 -> 기관 추가 (Add)
+                // 커넥티드 ID는 있는데 해당 기관은 처음 -> 기관 추가 (Add)
                 log.info("새로운 기관({})을 추가합니다.", input.getOrganization());
                 addCredential(userId, input);
             } else {
-                // 3. 이미 등록된 기관 -> 새 비밀번호로 업데이트 (Update)
+                // 이미 등록된 기관 -> 새 비밀번호로 업데이트
                 log.info("기존에 등록된 기관({})입니다. 인증 정보를 최신화합니다.", input.getOrganization());
                 updateCredential(userId, input);
             }
@@ -134,11 +132,6 @@ public class CodefProvider {
         String connectedId = connectedIdRepository.findActiveConnectedIdByUserId(userId)
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
 
-        if ("1".equals(credentialInput.getLoginType()) && credentialInput.getPassword() != null) {
-            String encryptedPassword = RsaEncryptor.encryptWithPemPublicKey(credentialInput.getPassword(), props.getPublicKey());
-            credentialInput.setPassword(encryptedPassword);
-        }
-
         var requestBody = Map.of(
                 "connectedId", connectedId,
                 "accountList", List.of(credentialInput)
@@ -178,11 +171,6 @@ public class CodefProvider {
     public void updateCredential(Long userId, CredentialCreateRequestDTO.CredentialInput credentialInput) {
         String connectedId = connectedIdRepository.findActiveConnectedIdByUserId(userId)
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
-
-        if ("1".equals(credentialInput.getLoginType()) && credentialInput.getPassword() != null) {
-            String encryptedPassword = RsaEncryptor.encryptWithPemPublicKey(credentialInput.getPassword(), props.getPublicKey());
-            credentialInput.setPassword(encryptedPassword);
-        }
 
         var requestBody = Map.of(
                 "connectedId", connectedId,
