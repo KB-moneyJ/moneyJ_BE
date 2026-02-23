@@ -18,7 +18,6 @@ import com.project.moneyj.trip.tip.dto.SavingsTipResponseDTO;
 import com.project.moneyj.trip.tip.repository.TripSavingPhraseRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
-
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.time.temporal.ChronoUnit;
@@ -48,6 +47,13 @@ public class SavingTipService {
     private final AccountService accountService;
     private final TransactionSummaryService transactionSummaryService;
 
+    /**
+     * 저축팁 리스트 조회
+     */
+    @Transactional(readOnly = true)
+    public List<String> getSavingsTips(Long userId) {
+        return tripSavingPhraseRepository.findAllContentByMemberId(userId);
+    }
 
     /**
      * 저축 팁 관련 Prompt 및 저축 Tip 생성
@@ -162,6 +168,7 @@ public class SavingTipService {
     }
 
 
+    // TODO: 트랜잭션 잠금 필요한지 & 되고 있는지 확인 필요
     @Transactional
     public void checkSavingTip(Long userId, Long planId) {
         //트랜잭션 잠금

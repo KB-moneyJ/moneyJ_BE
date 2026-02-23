@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.plan.dto.plan;
+package com.project.moneyj.trip.plan.dto;
 
 import java.time.LocalDate;
 import lombok.AllArgsConstructor;

@@ -1,9 +1,9 @@
-package com.project.moneyj.trip.plan.dto.plan;
+package com.project.moneyj.trip.plan.dto;
 
 
-import com.project.moneyj.trip.member.dto.TripMemberDTO;
+import com.project.moneyj.trip.member.dto.member.TripMemberDTO;
 import com.project.moneyj.trip.plan.domain.TripPlan;
-import com.project.moneyj.trip.plan.dto.category.CategoryDTO;
+import com.project.moneyj.trip.member.dto.category.CategoryDTO;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.AllArgsConstructor;

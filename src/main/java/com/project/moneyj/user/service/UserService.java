@@ -20,6 +20,21 @@ import org.springframework.stereotype.Service;
 public class UserService {
     private final UserRepository userRepository;
 
+    /**
+     * 유저 조회
+     */
+    public User getUser(Long id) {
+        return userRepository.findByUserId(id)
+            .orElseThrow(() -> MoneyjException.of(UserErrorCode.NOT_FOUND));
+    }
+
+    /**
+     * 유저 리스트 조회
+     */
+    public List<User> getUsersByEmails(List<String> emails) {
+        return userRepository.findAllByEmailIn(emails);
+    }
+
     public UserResponseDTO getUser() {
         Long userId = SecurityUtil.getCurrentUserId();
         if (userId == null) {
