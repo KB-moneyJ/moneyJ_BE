@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.tip.dto;
+package com.project.moneyj.trip.tripsavingphrase.dto;
 
 
 import java.util.List;

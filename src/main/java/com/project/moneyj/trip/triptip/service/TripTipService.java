@@ -1,6 +1,6 @@
-package com.project.moneyj.trip.tip.service;
+package com.project.moneyj.trip.triptip.service;
 
-import com.project.moneyj.trip.tip.repository.TripTipRepository;
+import com.project.moneyj.trip.triptip.repository.TripTipRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

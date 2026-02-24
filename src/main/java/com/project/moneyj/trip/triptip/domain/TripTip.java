@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.tip.domain;
+package com.project.moneyj.trip.triptip.domain;
 
 import com.project.moneyj.common.BaseTimeEntity;
 import jakarta.persistence.Entity;

@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.tip.service;
+package com.project.moneyj.trip.tripsavingphrase.service;
 
 
 import com.project.moneyj.trip.member.domain.TripMember;

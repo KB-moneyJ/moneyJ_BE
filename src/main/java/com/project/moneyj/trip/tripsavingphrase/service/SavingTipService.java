@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.tip.service;
+package com.project.moneyj.trip.tripsavingphrase.service;
 
 
 import com.project.moneyj.account.repository.AccountRepository;
@@ -13,9 +13,9 @@ import com.project.moneyj.trip.member.domain.TripMember;
 import com.project.moneyj.trip.member.repository.TripMemberRepository;
 import com.project.moneyj.trip.plan.domain.TripPlan;
 import com.project.moneyj.trip.plan.repository.TripPlanRepository;
-import com.project.moneyj.trip.tip.domain.TripSavingPhrase;
-import com.project.moneyj.trip.tip.dto.SavingsTipResponseDTO;
-import com.project.moneyj.trip.tip.repository.TripSavingPhraseRepository;
+import com.project.moneyj.trip.tripsavingphrase.domain.TripSavingPhrase;
+import com.project.moneyj.trip.tripsavingphrase.dto.SavingsTipResponseDTO;
+import com.project.moneyj.trip.tripsavingphrase.repository.TripSavingPhraseRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import java.time.LocalDate;
