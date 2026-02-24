@@ -32,6 +32,13 @@ public class AccountService {
     private final UserRepository userRepository;
     private final TripPlanRepository tripPlanRepository;
 
+    /**
+     * 여행 플랜, 유저 객체로 계좌 삭제
+     */
+    @Transactional
+    public void deleteAccountByTripPlanAndUser(TripPlan plan, User user) {
+        accountRepository.deleteByTripPlanAndUser(plan, user);
+    }
 
     // 기관 연결 및 등록된 계좌 목록 조회
     @Transactional
