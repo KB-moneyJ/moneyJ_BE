@@ -12,7 +12,7 @@ public class TripTipService {
     private final TripTipRepository tripTipRepository;
 
     @Transactional(readOnly = true)
-    public List<String> getSavingsTips(String country) {
+    public List<String> getTripTips(String country) {
         return tripTipRepository.findAllByCountry(country);
     }
 

@@ -53,8 +53,8 @@ public class TripPlanFacade {
         TripPlan plan = tripPlanService.getTripPlan(planId);
         TripMember member = tripMemberService.getTripMember(planId, userId);
 
-        List<String> savingsTips = savingTipService.getSavingsTips(member.getTripMemberId());
-        List<String> tripTips = tripTipService.getSavingsTips(plan.getCountry());
+        List<String> savingsTips = savingTipService.getSavingsTips(userId);
+        List<String> tripTips = tripTipService.getTripTips(plan.getCountry());
         List<CategoryDTO> categories = categoryService.getCategories(member, planId);
 
         return TripPlanDetailResponseDTO.fromEntity(plan, savingsTips, tripTips, categories);
