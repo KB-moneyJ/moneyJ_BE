@@ -20,8 +20,6 @@ public record CodefCredentialResultDTO(
             String clientType,
             String organization,
             String businessType,
-
-            String id,
             String loginType
     ) {}
 
