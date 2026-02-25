@@ -24,12 +24,9 @@ public class CodefCardService {
 
     private final CodefApiClient codefApiClient;
     private final CodefProperties codefProperties;
-    private final CodefConnectedIdRepository codefConnectedIdRepository;
 
     // 보유 카드 조회
-    public List<CodefCardDTO> fetchCards(Long userId, String organization) {
-        String connectedId = codefConnectedIdRepository.findActiveConnectedIdByUserId(userId)
-                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
+    public List<CodefCardDTO> fetchCards(String connectedId, String organization) {
 
         // CODEF 보유카드 목록 조회 API 호출
         Map<String, Object> body = Map.of(
@@ -64,10 +61,7 @@ public class CodefCardService {
     }
 
     // 거래 내역 조회(카드)
-    public List<CodefCardApprovalDTO> getCardApprovalList(Long userId, CardApprovalRequestDTO req) {
-
-        String connectedId = codefConnectedIdRepository.findActiveConnectedIdByUserId(userId)
-                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
+    public List<CodefCardApprovalDTO> getCardApprovalList(String connectedId, CardApprovalRequestDTO req) {
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("organization", req.getOrganization());

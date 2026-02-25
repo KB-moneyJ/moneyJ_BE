@@ -23,18 +23,14 @@ public class CodefBankService {
 
     private final CodefApiClient codefApiClient;
     private final CodefProperties codefProperties;
-    private final CodefConnectedIdRepository codefConnectedIdRepository;
 
     // 등록된 계좌 목록 조회
-    public List<CodefBankDataDTO.CodefBankAccountDTO> fetchBankAccounts(Long userId, String organization) {
-        String cid = codefConnectedIdRepository.findByUserId(userId)
-                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_RECEIVED))
-                .getConnectedId();
+    public List<CodefBankDataDTO.CodefBankAccountDTO> fetchBankAccounts(String connectedId, String organization) {
 
         BankAccountListReqDTO req = BankAccountListReqDTO.builder()
                 .countryCode("KR").businessType("BK").clientType("P")
                 .organization(organization)
-                .connectedId(cid)
+                .connectedId(connectedId)
                 .build();
 
         String url = codefProperties.getBaseUrl() + "/v1/kr/bank/p/account/account-list";
