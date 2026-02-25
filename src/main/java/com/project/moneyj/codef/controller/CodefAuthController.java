@@ -2,6 +2,7 @@ package com.project.moneyj.codef.controller;
 
 import com.project.moneyj.auth.dto.CustomOAuth2User;
 import com.project.moneyj.codef.service.*;
+import com.project.moneyj.codef.service.facade.CodefCredentialFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -13,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
 public class CodefAuthController implements CodefAuthControllerApiSpec{
 
     private final CodefAuthService codefAuthService;
-    private final CodefProvider codefProvider;
+    private final CodefCredentialFacade codefCredentialFacade;
 
 
     /**
@@ -37,6 +38,6 @@ public class CodefAuthController implements CodefAuthControllerApiSpec{
             @AuthenticationPrincipal CustomOAuth2User customUser) {
 
         Long userId = customUser.getUserId();
-        return ResponseEntity.ok(codefProvider.listCredentials(userId));
+        return ResponseEntity.ok(codefCredentialFacade.listCredentials(userId));
     }
 }

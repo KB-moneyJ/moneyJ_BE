@@ -2,7 +2,7 @@ package com.project.moneyj.transaction.service.external;
 
 import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
 import com.project.moneyj.codef.dto.CodefCardApprovalDTO;
-import com.project.moneyj.codef.service.CodefCardService;
+import com.project.moneyj.codef.service.facade.CodefInquiryFacade;
 import com.project.moneyj.transaction.dto.ExternalTransactionDTO;
 import com.project.moneyj.transaction.dto.TransactionRequestDTO;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +14,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CodefTransactionAdapter implements TransactionProvider {
 
-    private final CodefCardService codefCardService;
+    private final CodefInquiryFacade codefInquiryFacade;
 
     @Override
     public List<ExternalTransactionDTO> fetchTransactions(Long userId, TransactionRequestDTO request) {
@@ -32,7 +32,7 @@ public class CodefTransactionAdapter implements TransactionProvider {
                 .build();
 
         // CODEF API 호출
-        List<CodefCardApprovalDTO> codefResponse = codefCardService.getCardApprovalList(userId, codefReq);
+        List<CodefCardApprovalDTO> codefResponse = codefInquiryFacade.getCardApprovalList(userId, codefReq);
 
         // CODEF 응답 객체를 도메인 전용 객체로 변환하여 반환
         return codefResponse.stream()
