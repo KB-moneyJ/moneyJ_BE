@@ -4,7 +4,7 @@ import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
 import com.project.moneyj.codef.dto.CodefBankDataDTO;
 import com.project.moneyj.codef.dto.CodefCardApprovalDTO;
 import com.project.moneyj.codef.dto.CodefCardDTO;
-import com.project.moneyj.codef.service.CodefBankService;
+import com.project.moneyj.codef.service.CodefAccountService;
 import com.project.moneyj.codef.service.CodefCardService;
 import com.project.moneyj.codef.service.CodefInstitutionService;
 import com.project.moneyj.exception.MoneyjException;
@@ -22,8 +22,8 @@ import java.util.List;
 public class CodefInquiryFacade {
 
     private final CodefInstitutionService institutionService;
-    private final CodefBankService bankService;
-    private final CodefCardService cardService;
+    private final CodefAccountService codefAccountService;
+    private final CodefCardService codefCardService;
 
     // 계좌 목록 조회
     public List<CodefBankDataDTO.CodefBankAccountDTO> fetchBankAccounts(Long userId, String organization) {
@@ -31,20 +31,20 @@ public class CodefInquiryFacade {
         String connectedId = institutionService.getActiveConnectedId(userId)
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.INSTITUTION_NOT_FOUND));
         // API 호출 서비스로 위임
-        return bankService.fetchBankAccounts(connectedId, organization);
+        return codefAccountService.fetchBankAccounts(connectedId, organization);
     }
 
     // 카드 목록 조회
     public List<CodefCardDTO> fetchCards(Long userId, String organization) {
         String connectedId = institutionService.getActiveConnectedId(userId)
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.INSTITUTION_NOT_FOUND));
-        return cardService.fetchCards(connectedId, organization);
+        return codefCardService.fetchCards(connectedId, organization);
     }
 
     // 카드 승인 내역 조회
     public List<CodefCardApprovalDTO> getCardApprovalList(Long userId, CardApprovalRequestDTO req) {
         String connectedId = institutionService.getActiveConnectedId(userId)
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.INSTITUTION_NOT_FOUND));
-        return cardService.getCardApprovalList(connectedId, req);
+        return codefCardService.getCardApprovalList(connectedId, req);
     }
 }

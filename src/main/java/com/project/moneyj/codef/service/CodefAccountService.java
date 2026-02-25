@@ -4,11 +4,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.project.moneyj.codef.config.CodefProperties;
 import com.project.moneyj.codef.dto.BankAccountListReqDTO;
 import com.project.moneyj.codef.dto.CodefBankDataDTO;
-import com.project.moneyj.codef.dto.CodefResponseDTO;
-import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
-import com.project.moneyj.codef.util.ApiResponseDecoder;
-import com.project.moneyj.exception.MoneyjException;
-import com.project.moneyj.exception.code.CodefErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -19,7 +14,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 @Slf4j
-public class CodefBankService {
+public class CodefAccountService {
 
     private final CodefApiClient codefApiClient;
     private final CodefProperties codefProperties;
