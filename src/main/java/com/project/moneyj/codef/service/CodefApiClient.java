@@ -1,5 +1,10 @@
 package com.project.moneyj.codef.service;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.project.moneyj.codef.dto.CodefResponseDTO;
+import com.project.moneyj.codef.util.ApiResponseDecoder;
+import com.project.moneyj.exception.MoneyjException;
+import com.project.moneyj.exception.code.CodefErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.http.HttpHeaders;
@@ -52,5 +57,27 @@ public class CodefApiClient {
                     }
                 })
                 .block();
+    }
+
+    /**
+     * API 호출 + DTO 파싱 + 성공 여부 검증
+     */
+    public <T> T fetchAndDecode(String url, Object body, TypeReference<CodefResponseDTO<T>> typeReference) {
+
+        // API 호출
+        String rawResponse = executePost(url, body);
+
+        // DTO 파싱
+        CodefResponseDTO<T> responseDTO = ApiResponseDecoder.decode(rawResponse, typeReference);
+
+        // 에러 검증
+        if (responseDTO == null || !responseDTO.result().isSuccess()) {
+            String errorMsg = responseDTO != null ? responseDTO.result().message() : "응답 파싱 실패";
+            log.error("CODEF API 비즈니스 에러 [URL: {}] - {}", url, errorMsg);
+
+            throw MoneyjException.of(CodefErrorCode.BUSINESS_ERROR);
+        }
+
+        return responseDTO.data();
     }
 }
