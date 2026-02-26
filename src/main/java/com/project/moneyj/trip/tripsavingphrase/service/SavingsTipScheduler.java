@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.tip.service;
+package com.project.moneyj.trip.tripsavingphrase.service;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;

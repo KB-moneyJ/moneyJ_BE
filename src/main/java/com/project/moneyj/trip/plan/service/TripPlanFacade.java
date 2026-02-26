@@ -10,8 +10,8 @@ import com.project.moneyj.trip.plan.dto.TripPlanDetailResponseDTO;
 import com.project.moneyj.trip.plan.dto.TripPlanPatchRequestDTO;
 import com.project.moneyj.trip.plan.dto.TripPlanRequestDTO;
 import com.project.moneyj.trip.plan.dto.TripPlanResponseDTO;
-import com.project.moneyj.trip.tip.service.SavingTipService;
-import com.project.moneyj.trip.tip.service.TripTipService;
+import com.project.moneyj.trip.tripsavingphrase.service.SavingTipService;
+import com.project.moneyj.trip.triptip.service.TripTipService;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.service.UserService;
 import java.util.List;
@@ -54,7 +54,7 @@ public class TripPlanFacade {
         TripMember member = tripMemberService.getTripMember(planId, userId);
 
         List<String> savingsTips = savingTipService.getSavingsTips(member.getTripMemberId());
-        List<String> tripTips = tripTipService.getSavingsTips(plan.getCountry());
+        List<String> tripTips = tripTipService.getTripTips(plan.getCountry());
         List<CategoryDTO> categories = categoryService.getCategories(member, planId);
 
         return TripPlanDetailResponseDTO.fromEntity(plan, savingsTips, tripTips, categories);
