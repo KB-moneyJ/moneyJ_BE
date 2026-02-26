@@ -1,77 +1,53 @@
 package com.project.moneyj.card.service;
 
 import com.project.moneyj.card.domain.Card;
-import com.project.moneyj.card.dto.CardInfoDTO;
-import com.project.moneyj.card.dto.CardLinkRequestDTO;
-import com.project.moneyj.card.dto.CardResponseDTO;
-import com.project.moneyj.card.dto.CardSwitchRequestDTO;
+import com.project.moneyj.card.dto.*;
 import com.project.moneyj.card.repository.CardRepository;
-import com.project.moneyj.codef.domain.CodefConnectedId;
-import com.project.moneyj.codef.domain.CodefInstitution;
-import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
-import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
-import com.project.moneyj.codef.repository.CodefInstitutionRepository;
-import com.project.moneyj.codef.service.CodefCardService;
-import com.project.moneyj.codef.service.CodefProvider;
+import com.project.moneyj.card.service.external.CardProvider;
 import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.CardErrorCode;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class CardService {
 
-    private final CodefProvider codefProvider;
-
-    private final CodefCardService codefCardService;
+    private final CardProvider cardProvider;
 
     private final CardRepository cardRepository;
     private final UserRepository userRepository;
-    private final CodefConnectedIdRepository codefConnectedIdRepository;
-    private final CodefInstitutionRepository codefInstitutionRepository;
 
     // 카드 목록 조회 및 기관 연결
     @Transactional
-    public List<CardInfoDTO> connectInstitutionAndFetchCards(Long userId, CredentialCreateRequestDTO.CredentialInput input) {
+    public List<CardInfoDTO> connectInstitutionAndFetchCards(Long userId, CardConnectionRequestDTO request) {
 
-        Optional<CodefConnectedId> existingCid = codefConnectedIdRepository.findByUserId(userId);
+        // 기관 연결
+        cardProvider.connectInstitution(userId, request);
 
-        // 기관 등록
-        if (existingCid.isEmpty()) {
-            codefProvider.createConnectedId(userId, input);
-        } else {
-            String cid = existingCid.get().getConnectedId();
-            Optional<CodefInstitution> existingInstitution = codefInstitutionRepository
-                    .findByConnectedIdAndOrganization(cid, input.getOrganization());
+        // 카드 정보 조회 (CODEF API 호출)
+        List<ExternalCardDTO> externalCards = cardProvider.fetchCards(userId, request.organization());
 
-            if(existingInstitution.isEmpty()) {
-                // connectedId가 있고, 기관 등록이 안되었다면 -> 기관 추가
-                // connectedId가 있고, 기관 등록이 이미 되어있다면 -> 카드 조회로 바로 진행
-                codefProvider.addCredential(userId, input);
-            }
-        }
 
-        Map<String, Object> codefResponse = codefCardService.fetchCards(userId, input.getOrganization());
-
-        Object dataObj = codefResponse.get("data");
-        List<Map<String, Object>> cardListFromApi = normalizeToList(dataObj);
-
-        return cardListFromApi.stream()
+        // CODEF에서 받아온 카드 정보를 응답 DTO로 변환하여 반환
+        List<CardInfoDTO> result = externalCards.stream()
                 .map(card -> CardInfoDTO.builder()
-                        .cardName((String) card.get("resCardName"))
-                        .cardNo((String) card.get("resCardNo"))
-                        .organizationCode(input.getOrganization())
+                        .cardName(card.cardName())
+                        .cardNo(card.cardNo())
+                        .organizationCode(card.organizationCode())
                         .build())
                 .collect(Collectors.toList());
+
+        return result;
     }
 
     // DB에 카드 저장
@@ -139,20 +115,4 @@ public class CardService {
         // 로컬 삭제
         cardRepository.delete(card);
     }
-
-    @SuppressWarnings("unchecked")
-    private List<Map<String, Object>> normalizeToList(Object obj) {
-        if (obj == null) return List.of();
-
-        if (obj instanceof List<?> list) {
-            return (List<Map<String, Object>>) list;
-        }
-
-        if (obj instanceof Map<?, ?> map) {
-            return List.of((Map<String, Object>) map);
-        }
-
-        return List.of();
-    }
-
 }

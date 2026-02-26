@@ -2,7 +2,7 @@ package com.project.moneyj.transaction.service;
 
 import com.project.moneyj.card.domain.Card;
 import com.project.moneyj.card.repository.CardRepository;
-import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
+import com.project.moneyj.transaction.dto.TransactionRequestDTO;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -43,7 +43,7 @@ public class TransactionSyncScheduler {
 
                 String organization = card.getOrganizationCode();
 
-                CardApprovalRequestDTO req = CardApprovalRequestDTO.builder()
+                TransactionRequestDTO request = TransactionRequestDTO.builder()
                         .organization(organization)
                         .startDate(startDate)
                         .endDate(endDate)
@@ -51,7 +51,7 @@ public class TransactionSyncScheduler {
                         .inquiryType("1")
                         .build();
 
-                transactionService.updateWeeklyTransactions(user, req);
+                transactionService.updateWeeklyTransactions(user, request);
             }
         }
     }
