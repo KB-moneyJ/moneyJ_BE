@@ -118,6 +118,14 @@ public class CardService {
         return CardResponseDTO.from(card);
     }
 
+    // 카드 정보 조회
+    @Transactional(readOnly = true)
+    public CardResponseDTO getCardInfo(Long userId, Long cardId) {
+        Card card = cardRepository.findById(cardId)
+                .orElseThrow(() -> MoneyjException.of(CardErrorCode.CARD_NOT_FOUND));
+        return CardResponseDTO.from(card);
+    }
+
     // 카드 삭제
     @Transactional
     public void deleteCard(Long userId, Long cardId) {

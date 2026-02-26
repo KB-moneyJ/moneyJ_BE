@@ -68,6 +68,18 @@ public class CardController implements CardControllerApiSpec {
     }
 
     /**
+     * 등록된 카드 정보 조회
+     */
+    @Override
+    @GetMapping("/{cardId}")
+    public ResponseEntity<CardResponseDTO> getCardInfo(
+            @AuthenticationPrincipal CustomOAuth2User customUser,
+            @PathVariable Long cardId) {
+        Long userId = customUser.getUserId();
+        return ResponseEntity.ok(cardService.getCardInfo(userId, cardId));
+    }
+
+    /**
      * 카드 삭제
      */
     @Override
