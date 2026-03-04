@@ -2,7 +2,7 @@ package com.project.moneyj.trip.plan.domain;
 
 import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.trip.member.domain.TripMember;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanPatchRequestDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanPatchRequestDTO;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -140,6 +140,10 @@ public class TripPlan extends BaseTimeEntity {
     public void removeMember(TripMember member) {
         this.tripMemberList.remove(member);
         this.membersCount = this.tripMemberList.size();
+    }
+
+    public boolean hasNoMembers() {
+        return this.tripMemberList.isEmpty();
     }
 
 }

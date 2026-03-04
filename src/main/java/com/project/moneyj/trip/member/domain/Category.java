@@ -1,8 +1,8 @@
-package com.project.moneyj.trip.plan.domain;
+package com.project.moneyj.trip.member.domain;
 
 import com.project.moneyj.common.BaseTimeEntity;
-import com.project.moneyj.trip.member.domain.TripMember;
-import com.project.moneyj.trip.plan.dto.category.CategoryDTO;
+import com.project.moneyj.trip.member.dto.category.CategoryDTO;
+import com.project.moneyj.trip.plan.domain.TripPlan;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -33,6 +33,7 @@ public class Category extends BaseTimeEntity {
 
     private boolean isConsumed = false;
 
+    // TODO: tripPlan 끊기
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "trip_plan_id")
     private TripPlan tripPlan;

@@ -2,10 +2,10 @@ package com.project.moneyj.trip.member.controller;
 
 
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.trip.member.dto.AddTripMemberRequestDTO;
-import com.project.moneyj.trip.member.dto.UserBalanceResponseDTO;
+import com.project.moneyj.trip.member.dto.member.AddTripMemberRequestDTO;
+import com.project.moneyj.trip.member.dto.member.UserBalanceResponseDTO;
 import com.project.moneyj.trip.member.service.TripMemberService;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanResponseDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanResponseDTO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;

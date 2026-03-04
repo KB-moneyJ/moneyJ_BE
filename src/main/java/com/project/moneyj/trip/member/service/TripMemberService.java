@@ -8,15 +8,16 @@ import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.TripMemberErrorCode;
 import com.project.moneyj.exception.code.TripPlanErrorCode;
 import com.project.moneyj.exception.code.UserErrorCode;
+import com.project.moneyj.trip.member.domain.Category;
 import com.project.moneyj.trip.member.domain.MemberRole;
 import com.project.moneyj.trip.member.domain.TripMember;
-import com.project.moneyj.trip.member.dto.AddTripMemberRequestDTO;
-import com.project.moneyj.trip.member.dto.UserBalanceResponseDTO;
+import com.project.moneyj.trip.member.dto.category.CategoryDTO;
+import com.project.moneyj.trip.member.dto.member.AddTripMemberRequestDTO;
+import com.project.moneyj.trip.member.dto.member.UserBalanceResponseDTO;
+import com.project.moneyj.trip.member.repository.CategoryRepository;
 import com.project.moneyj.trip.member.repository.TripMemberRepository;
-import com.project.moneyj.trip.plan.domain.Category;
 import com.project.moneyj.trip.plan.domain.TripPlan;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanResponseDTO;
-import com.project.moneyj.trip.plan.repository.CategoryRepository;
+import com.project.moneyj.trip.plan.dto.TripPlanResponseDTO;
 import com.project.moneyj.trip.plan.repository.TripPlanRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
@@ -51,6 +52,49 @@ public class TripMemberService {
     private final AccountService accountService;
 
     private final Clock clock;
+
+
+    /**
+     * 초기 멤버 & 카테고리 등록
+     */
+    @Transactional
+    public void enrollMembersWithCategories(
+        TripPlan tripPlan,
+        List<User> users,
+        List<CategoryDTO> categoryDTOList
+    ) {
+        for (User user : users) {
+            TripMember tripMember = TripMember.of(null, null, MemberRole.MEMBER);
+            tripMember.enrollTripMember(user, tripPlan);
+
+            categoryDTOList.forEach(dto ->
+                tripMember.addCategory(
+                    dto.getCategoryName(),
+                    dto.getAmount(),
+                    tripPlan
+                )
+            );
+
+            tripMemberRepository.save(tripMember);
+        }
+    }
+
+    /**
+     * 여행 멤버 조회
+     */
+    public TripMember getTripMember(Long planId, Long userId) {
+        return tripMemberRepository.findByPlanIdAndUserId(planId, userId)
+            .orElseThrow(() -> MoneyjException.of(TripMemberErrorCode.NOT_FOUND));
+    }
+
+    /**
+     * 여행 멤버인지 검증
+     */
+    public void validateMember(Long userId, Long planId) {
+        if (!tripMemberRepository.existsMemberByUserAndPlan(userId, planId)) {
+            throw MoneyjException.of(TripMemberErrorCode.NOT_FOUND);
+        }
+    }
 
 
     /**

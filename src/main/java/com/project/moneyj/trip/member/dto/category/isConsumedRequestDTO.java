@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.plan.dto.category;
+package com.project.moneyj.trip.member.dto.category;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;

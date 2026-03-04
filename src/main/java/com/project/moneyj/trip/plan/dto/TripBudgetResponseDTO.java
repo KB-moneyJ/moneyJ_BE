@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.plan.dto.plan;
+package com.project.moneyj.trip.plan.dto;
 
 
 import lombok.AllArgsConstructor;

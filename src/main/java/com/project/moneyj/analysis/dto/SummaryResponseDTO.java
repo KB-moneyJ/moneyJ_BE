@@ -8,8 +8,9 @@ import lombok.Getter;
 @Getter
 public class SummaryResponseDTO {
     private boolean cardConnected;
+    private Long cardId;
     private List<MonthlySummaryDTO> monthly;
 
-    public static SummaryResponseDTO of(boolean cardConnected, List<MonthlySummaryDTO> monthly) {
-        return new SummaryResponseDTO(cardConnected, monthly);
+    public static SummaryResponseDTO of(boolean cardConnected, Long cardId, List<MonthlySummaryDTO> monthly) {
+        return new SummaryResponseDTO(cardConnected, cardId, monthly);
     }}

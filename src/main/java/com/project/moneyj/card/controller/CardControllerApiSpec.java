@@ -55,6 +55,16 @@ public interface CardControllerApiSpec {
             @Parameter(description = "변경할 카드의 ID", required = true) @PathVariable Long cardId,
             @RequestBody @Valid CardSwitchRequestDTO request);
 
+    @Operation(summary = "카드 조회", description = "DB에 저장된 카드 하나를 조회합니다.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "204", description = "카드 조회 성공"),
+            @ApiResponse(responseCode = "403", description = "접근 권한 없음"),
+            @ApiResponse(responseCode = "404", description = "카드를 찾을 수 없음")
+    })
+    ResponseEntity<CardResponseDTO> getCardInfo(
+            @AuthenticationPrincipal CustomOAuth2User customUser,
+            @Parameter(description = "조회할 카드의 ID", required = true) @PathVariable Long cardId);
+
     @Operation(summary = "카드 삭제", description = "DB에 저장된 카드를 삭제합니다.")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "204", description = "카드 삭제 성공"),

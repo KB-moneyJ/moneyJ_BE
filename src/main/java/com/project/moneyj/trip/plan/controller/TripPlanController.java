@@ -2,20 +2,15 @@ package com.project.moneyj.trip.plan.controller;
 
 
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.trip.plan.dto.category.CategoryDTO;
-import com.project.moneyj.trip.plan.dto.category.CategoryListRequestDTO;
-import com.project.moneyj.trip.plan.dto.category.CategoryResponseDTO;
-import com.project.moneyj.trip.plan.dto.category.isConsumedRequestDTO;
-import com.project.moneyj.trip.plan.dto.category.isConsumedResponseDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripBudgetRequestDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripBudgetResponseDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanDetailResponseDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanListResponseDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanPatchRequestDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanRequestDTO;
-import com.project.moneyj.trip.plan.dto.plan.TripPlanResponseDTO;
+import com.project.moneyj.trip.plan.dto.TripBudgetRequestDTO;
+import com.project.moneyj.trip.plan.dto.TripBudgetResponseDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanDetailResponseDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanListResponseDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanPatchRequestDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanRequestDTO;
+import com.project.moneyj.trip.plan.dto.TripPlanResponseDTO;
+import com.project.moneyj.trip.plan.service.TripPlanFacade;
 import com.project.moneyj.trip.plan.service.TripPlanService;
-import com.project.moneyj.trip.tip.service.SavingTipService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -35,8 +30,8 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/trip-plans")
 public class TripPlanController implements TripPlanControllerApiSpec {
 
+    private final TripPlanFacade tripPlanFacade;
     private final TripPlanService tripPlanService;
-    private final SavingTipService savingTipService;
 
     /**
      * 여행 플랜 생성
@@ -46,7 +41,8 @@ public class TripPlanController implements TripPlanControllerApiSpec {
     public ResponseEntity<TripPlanResponseDTO> createTripPlan(
         @RequestBody TripPlanRequestDTO request
     ) {
-        TripPlanResponseDTO response = tripPlanService.createTripPlans(request);
+        TripPlanResponseDTO response = tripPlanFacade.createTripPlan(request);
+
         return ResponseEntity.ok(response);
     }
 
@@ -60,6 +56,7 @@ public class TripPlanController implements TripPlanControllerApiSpec {
         @AuthenticationPrincipal CustomOAuth2User customUser
     ){
         Long userId = customUser.getUserId();
+
         return ResponseEntity.ok(tripPlanService.getUserTripPlans(userId));
     }
 
@@ -73,8 +70,7 @@ public class TripPlanController implements TripPlanControllerApiSpec {
             @AuthenticationPrincipal CustomOAuth2User customUser
     ) {
         Long userId = customUser.getUserId();
-        savingTipService.checkSavingTip(userId, planId);
-        TripPlanDetailResponseDTO response = tripPlanService.getTripPlanDetail(planId, userId);
+        TripPlanDetailResponseDTO response = tripPlanFacade.getTripPlanDetail(planId, userId);
 
         return ResponseEntity.ok(response);
     }
@@ -86,11 +82,12 @@ public class TripPlanController implements TripPlanControllerApiSpec {
     @PatchMapping("/{planId}")
     public ResponseEntity<TripPlanResponseDTO> putPlan(
             @PathVariable Long planId,
-            @RequestBody TripPlanPatchRequestDTO requestDTO,
+            @RequestBody TripPlanPatchRequestDTO request,
             @AuthenticationPrincipal CustomOAuth2User customUser
     ){
         Long userId = customUser.getUserId();
-        TripPlanResponseDTO updatedPlan = tripPlanService.patchPlan(userId, planId, requestDTO);
+        TripPlanResponseDTO updatedPlan = tripPlanFacade.updatePlan(userId, planId, request);
+
         return ResponseEntity.ok(updatedPlan);
     }
 
@@ -104,7 +101,7 @@ public class TripPlanController implements TripPlanControllerApiSpec {
             @AuthenticationPrincipal CustomOAuth2User customUser
     ){
         Long userId = customUser.getUserId();
-        TripPlanResponseDTO response = tripPlanService.leavePlan(planId, userId);
+        TripPlanResponseDTO response = tripPlanFacade.leaveTripPlan(planId, userId);
 
         return ResponseEntity.ok(response);
     }
@@ -119,47 +116,8 @@ public class TripPlanController implements TripPlanControllerApiSpec {
         @RequestBody TripBudgetRequestDTO request
     ) {
         TripBudgetResponseDTO budget = tripPlanService.getTripBudget(request);
+
         return ResponseEntity.ok(budget);
-    }
-
-
-    /**
-     * 여행 플랜 카테고리별 목표 달성 여부 변경
-     */
-    @Override
-    @PostMapping("/isconsumed")
-    public ResponseEntity<isConsumedResponseDTO> switchIsConsumed(
-        @AuthenticationPrincipal CustomOAuth2User customUser,
-        @RequestBody isConsumedRequestDTO request
-    ) {
-        Long userId = customUser.getUserId();
-        return ResponseEntity.ok(tripPlanService.switchIsConsumed(request, userId));
-    }
-
-    /**
-     * 여행 플랜 카테고리 조회
-     */
-    @Override
-    @GetMapping("/isconsumed/{planId}")
-    public ResponseEntity<List<CategoryDTO>> getIsConsumed(
-        @AuthenticationPrincipal CustomOAuth2User customUser,
-        @PathVariable Long planId
-    ) {
-        Long userId = customUser.getUserId();
-        return ResponseEntity.ok(tripPlanService.getIsConsumed(planId, userId));
-    }
-
-    /**
-     * 여행 플랜 카테고리 변경
-     */
-    @Override
-    @PatchMapping("/category")
-    public ResponseEntity<CategoryResponseDTO> patchCategory(
-        @AuthenticationPrincipal CustomOAuth2User customUser,
-        @RequestBody CategoryListRequestDTO request
-    ) {
-        Long userId = customUser.getUserId();
-        return ResponseEntity.ok(tripPlanService.patchCategory(request, userId));
     }
 
 }

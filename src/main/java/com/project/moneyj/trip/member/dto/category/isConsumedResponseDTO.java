@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.plan.dto.category;
+package com.project.moneyj.trip.member.dto.category;
 
 import javax.validation.constraints.NotNull;
 import lombok.AllArgsConstructor;
