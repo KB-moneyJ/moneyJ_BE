@@ -8,6 +8,8 @@ import com.project.moneyj.analysis.dto.SummaryQueryDTO;
 import com.project.moneyj.analysis.dto.SummaryResponseDTO;
 import com.project.moneyj.analysis.repository.TransactionSummaryRepository;
 import com.project.moneyj.analysis.repository.query.TransactionSummaryQuerydslRepository;
+import com.project.moneyj.card.domain.Card;
+import com.project.moneyj.card.repository.CardRepository;
 import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.TransactionErrorCode;
 import com.project.moneyj.exception.code.TransactionSummaryErrorCode;
@@ -40,6 +42,7 @@ public class TransactionSummaryService {
     private final TransactionSummaryRepository transactionSummaryRepository;
     private final TransactionSummaryQuerydslRepository transactionSummaryQuerydslRepository;
     private final TransactionRepository transactionRepository;
+    private final CardRepository cardRepository;
     private final UserRepository userRepository;
 
     @Transactional(readOnly = true)
@@ -51,7 +54,10 @@ public class TransactionSummaryService {
         // 6개월 요약 데이터 리스트를 조회
         List<MonthlySummaryDTO> summaries = getMonthlySummary(userId, baseYearMonth);
 
-        return SummaryResponseDTO.of(idCardConnected, summaries);
+        Card card = cardRepository.findByUser_UserId(userId)
+            .orElse(null);
+
+        return SummaryResponseDTO.of(idCardConnected, card != null ? card.getCardId() : null, summaries);
     }
 
     public List<MonthlySummaryDTO> getMonthlySummary(Long userId, String baseYearMonth) {
@@ -81,17 +87,17 @@ public class TransactionSummaryService {
                 String monthStr = month.toString();
                 List<SummaryQueryDTO> monthSummaries = grouped.getOrDefault(monthStr, Collections.emptyList());
 
-                List<MonthlySummaryDTO.CategorySummaryDTO> categories = monthSummaries.stream()
-                    .map(s -> new MonthlySummaryDTO.CategorySummaryDTO(
+                List<CategorySummaryDTO> categories = monthSummaries.stream()
+                    .map(s -> new CategorySummaryDTO(
                         s.getCategory().getDescription(),
                         s.getTotalAmount(),
                         s.getTransactionCount()
                     ))
-                    .sorted(Comparator.comparingInt(MonthlySummaryDTO.CategorySummaryDTO::getTotalAmount).reversed())
+                    .sorted(Comparator.comparingInt(CategorySummaryDTO::getTotalAmount).reversed())
                     .toList();
 
                 int monthTotal = categories.stream()
-                    .mapToInt(MonthlySummaryDTO.CategorySummaryDTO::getTotalAmount)
+                    .mapToInt(CategorySummaryDTO::getTotalAmount)
                     .sum();
 
                 return new MonthlySummaryDTO(monthStr, monthTotal, categories);
