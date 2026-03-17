@@ -2,7 +2,7 @@ package com.project.moneyj.trip.member.domain;
 
 import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.trip.plan.domain.TripPlan;
-import com.project.moneyj.trip.tip.domain.TripSavingPhrase;
+import com.project.moneyj.trip.tripsavingphrase.domain.TripSavingPhrase;
 import com.project.moneyj.user.domain.User;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;

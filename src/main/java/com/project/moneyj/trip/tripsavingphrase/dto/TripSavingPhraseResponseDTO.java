@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.tip.dto;
+package com.project.moneyj.trip.tripsavingphrase.dto;
 
 
 import java.util.List;
@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SavingsTipResponseDTO {
+public class TripSavingPhraseResponseDTO {
     private List<String> messages;
 }
