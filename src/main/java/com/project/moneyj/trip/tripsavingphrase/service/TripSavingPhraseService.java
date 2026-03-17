@@ -14,7 +14,7 @@ import com.project.moneyj.trip.member.repository.TripMemberRepository;
 import com.project.moneyj.trip.plan.domain.TripPlan;
 import com.project.moneyj.trip.plan.repository.TripPlanRepository;
 import com.project.moneyj.trip.tripsavingphrase.domain.TripSavingPhrase;
-import com.project.moneyj.trip.tripsavingphrase.dto.SavingsTipResponseDTO;
+import com.project.moneyj.trip.tripsavingphrase.dto.TripSavingPhraseResponseDTO;
 import com.project.moneyj.trip.tripsavingphrase.repository.TripSavingPhraseRepository;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
@@ -35,7 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @Slf4j
 @RequiredArgsConstructor
-public class SavingTipService {
+public class TripSavingPhraseService {
 
     private final UserRepository userRepository;
     private final TripPlanRepository tripPlanRepository;
@@ -51,7 +51,7 @@ public class SavingTipService {
      * 저축팁 리스트 조회
      */
     @Transactional(readOnly = true)
-    public List<String> getSavingsTips(Long memberId) {
+    public List<String> getTripSavingPhrases(Long memberId) {
         return tripSavingPhraseRepository.findAllContentByTripMemberId(memberId);
     }
 
@@ -59,7 +59,7 @@ public class SavingTipService {
      * 저축 팁 관련 Prompt 및 저축 Tip 생성
      */
     @Transactional
-    public void addSavingsTip(Long userId, Long planId) {
+    public void addTripSavingPhrase(Long userId, Long planId) {
 
         int currentSavings = accountService.getUserBalance(userId, planId);
 
@@ -90,7 +90,7 @@ public class SavingTipService {
 
         String promptText = buildPrompt(currentSavings, tripBudget, transactionSummary, now, startDate, daysUntilTrip);
 
-        SavingsTipResponseDTO response = callGpt(promptText);
+        TripSavingPhraseResponseDTO response = callGpt(promptText);
 
         for (String tip : response.getMessages()) {
             TripSavingPhrase phrase = TripSavingPhrase.of(tripMember, tip);
@@ -151,7 +151,7 @@ public class SavingTipService {
         );
     }
 
-    public SavingsTipResponseDTO callGpt(String promptText) {
+    public TripSavingPhraseResponseDTO callGpt(String promptText) {
         return chatClient
                 .prompt()
                 .options(OpenAiChatOptions.builder()
@@ -164,13 +164,13 @@ public class SavingTipService {
                         "반드시 예시를 참고하여 구어체를 사용하여 답변해.")
                 .user(promptText)
                 .call()
-                .entity(SavingsTipResponseDTO.class);
+                .entity(TripSavingPhraseResponseDTO.class);
     }
 
 
     // TODO: 트랜잭션 잠금 필요한지 & 되고 있는지 확인 필요
     @Transactional
-    public void checkSavingTip(Long userId, Long planId) {
+    public void checkTripSavingPhrase(Long userId, Long planId) {
         //트랜잭션 잠금
         TripMember member = tripMemberRepository.findMemberForUpdate(userId, planId);
 
@@ -178,21 +178,21 @@ public class SavingTipService {
         if (tripSavingPhraseRepository.existsByUserIdAndPlanId(userId, planId)) {
             return;
         }
-        if (conditionSavingsTip(userId, planId)) {
-            addSavingsTip(userId, planId);
+        if (conditionTripSavingPhrase(userId, planId)) {
+            addTripSavingPhrase(userId, planId);
         }
     }
 
     @Transactional
-    public void updateSavingsTip(Long userId, Long planId, Long memberId) {
+    public void updateTripSavingPhrases(Long userId, Long planId, Long memberId) {
         tripSavingPhraseRepository.deleteByTripMember_TripMemberId(memberId);
 
-        if (conditionSavingsTip(userId, planId)) {
-            addSavingsTip(userId, planId);
+        if (conditionTripSavingPhrase(userId, planId)) {
+            addTripSavingPhrase(userId, planId);
         }
     }
 
-    private boolean conditionSavingsTip(Long userId, Long planId) {
+    private boolean conditionTripSavingPhrase(Long userId, Long planId) {
         if (!tripMemberRepository.existsMemberByUserAndPlan(userId, planId)) return false;
         if (accountRepository.findByUserIdAndTripPlanId(userId, planId).isEmpty()) return false;
         return userRepository.findByUserId(userId)

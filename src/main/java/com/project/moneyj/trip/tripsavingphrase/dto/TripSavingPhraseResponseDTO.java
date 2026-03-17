@@ -9,6 +9,6 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor
 @AllArgsConstructor
-public class SavingsTipResponseDTO {
+public class TripSavingPhraseResponseDTO {
     private List<String> messages;
 }

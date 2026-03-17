@@ -9,19 +9,19 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class SavingTipBatchService {
+public class TripSavingPhraseBatchService {
 
     private final TripMemberService tripMemberService;
-    private final SavingTipService savingTipService;
+    private final TripSavingPhraseService tripSavingPhraseService;
 
-    public void updateAllMemberSavingTip(){
+    public void updateAllMemberTripSavingPhrases(){
         List<TripMember> members = tripMemberService.getTripMembers();
 
         for(TripMember member : members){
             Long userId = member.getUser().getUserId();
             Long planId = member.getTripPlan().getTripPlanId();
             Long memberId = member.getTripMemberId();
-            savingTipService.updateSavingsTip(userId, planId, memberId);
+            tripSavingPhraseService.updateTripSavingPhrases(userId, planId, memberId);
         }
     }
 }
