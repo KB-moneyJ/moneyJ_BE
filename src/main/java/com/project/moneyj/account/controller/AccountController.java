@@ -1,13 +1,8 @@
 package com.project.moneyj.account.controller;
 
-import com.project.moneyj.account.dto.AccountInfoDTO;
-import com.project.moneyj.account.dto.AccountLinkRequestDTO;
-import com.project.moneyj.account.dto.AccountResponseDTO;
-import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
+import com.project.moneyj.account.dto.*;
 import com.project.moneyj.account.service.AccountService;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
-import com.project.moneyj.codef.service.CodefBankService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -33,7 +28,7 @@ public class AccountController implements AccountControllerApiSpec{
     @PostMapping("/connect")
     public ResponseEntity<List<AccountInfoDTO>> connectAndFetchAccounts(
         @AuthenticationPrincipal CustomOAuth2User customUser,
-        @RequestBody CredentialCreateRequestDTO.CredentialInput request) {
+        @RequestBody AccountConnectionRequestDTO request) {
 
         Long userId = customUser.getUserId();
         List<AccountInfoDTO> accounts = accountService.connectInstitutionAndFetchAccounts(userId, request);

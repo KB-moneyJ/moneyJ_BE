@@ -24,24 +24,25 @@ public class CodefConnectedId extends BaseTimeEntity {
     @Column(name="connected_id", nullable=false, length=100)
     private String connectedId;
 
+    @Enumerated(EnumType.STRING)
     @Column(name="status", length=20)
-    private String status; // ACTIVE/INACTIVE
+    private ConnectedIdStatus status;
 
 
     // === 생성자 (도메인 내부용) ===
-    private CodefConnectedId(Long userId, String connectedId, String status){
+    private CodefConnectedId(Long userId, String connectedId, ConnectedIdStatus status){
         this.userId = userId;
         this.connectedId = connectedId;
         this.status = status;
     }
 
     // === 정적 팩토리 메서드 ===
-    public static CodefConnectedId of(Long userId, String connectedId, String status){
+    public static CodefConnectedId of(Long userId, String connectedId, ConnectedIdStatus status){
         return new CodefConnectedId(userId, connectedId, status);
     }
 
 
     @PrePersist void prePersist() {
-        if (status == null) status = "ACTIVE";
+        if (status == null) status = ConnectedIdStatus.ACTIVE;
     }
 }

@@ -1,6 +1,6 @@
 package com.project.moneyj.transaction.domain.event;
 
-import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
+import com.project.moneyj.transaction.dto.TransactionRequestDTO;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -8,5 +8,5 @@ import lombok.Getter;
 @AllArgsConstructor
 public class TransactionRequestEvent {
     private final Long userId;
-    private final CardApprovalRequestDTO request;
+    private final TransactionRequestDTO request;
 }

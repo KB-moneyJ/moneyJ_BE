@@ -1,12 +1,7 @@
 package com.project.moneyj.account.controller;
 
-import com.project.moneyj.account.domain.Account;
-import com.project.moneyj.account.dto.AccountInfoDTO;
-import com.project.moneyj.account.dto.AccountLinkRequestDTO;
-import com.project.moneyj.account.dto.AccountResponseDTO;
-import com.project.moneyj.account.dto.AccountSwitchRequestDTO;
+import com.project.moneyj.account.dto.*;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -17,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 @Tag(name = "Accounts", description = "여행 플랜 계좌 API")
 public interface AccountControllerApiSpec {
@@ -31,7 +25,7 @@ public interface AccountControllerApiSpec {
     })
     ResponseEntity<List<AccountInfoDTO>> connectAndFetchAccounts(
         @AuthenticationPrincipal CustomOAuth2User customUser,
-        @RequestBody CredentialCreateRequestDTO.CredentialInput request
+        @RequestBody AccountConnectionRequestDTO request
     );
 
     @Operation(summary = "여행별 선택한 계좌를 DB에 저장", description = "사용자가 선택한 계좌를 DB에 저장합니다.")

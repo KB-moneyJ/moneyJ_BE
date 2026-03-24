@@ -7,7 +7,7 @@ import static org.mockito.Mockito.verify;
 
 import com.project.moneyj.account.domain.Account;
 import com.project.moneyj.account.repository.AccountRepository;
-import com.project.moneyj.codef.service.CodefBankService;
+import com.project.moneyj.codef.service.CodefAccountService;
 import com.project.moneyj.trip.plan.repository.TripPlanRepository;
 import com.project.moneyj.user.domain.Role;
 import com.project.moneyj.user.domain.User;
@@ -27,7 +27,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 public class AccountServiceTest {
 
     @Mock
-    private CodefBankService codefBankService;
+    private CodefAccountService codefAccountService;
 
     @Mock
     private AccountRepository accountRepository;
@@ -212,7 +212,7 @@ public class AccountServiceTest {
 
         // 외부 API Mock 동작 정의
         // 테스트 중에 codefBankService.fetchBankAccounts를 호출하면 codefResponse를 반환
-        given(codefBankService.fetchBankAccounts(1L, "001"))
+        given(codefAccountService.fetchBankAccounts(1L, "001"))
                 .willReturn(codefResponse);
 
         //when
@@ -224,7 +224,7 @@ public class AccountServiceTest {
         assertEquals(5000, account.getBalance());
 
         //accountService가 codefBankService.fetchBankAccounts를 1번 호출했는지 검증
-        verify(codefBankService, times(1)).fetchBankAccounts(1L, "001");
+        verify(codefAccountService, times(1)).fetchBankAccounts(1L, "001");
     }
 //
 //    @Test

@@ -1,8 +1,7 @@
 package com.project.moneyj.transaction.controller;
 
-import com.project.moneyj.analysis.service.TransactionSummaryService;
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
+import com.project.moneyj.transaction.dto.TransactionRequestDTO;
 import com.project.moneyj.transaction.service.TransactionFacade;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,16 +16,15 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/transactions")
 public class TransactionController implements TransactionControllerApiSpec{
     private final TransactionFacade transactionFacade;
-    private final TransactionSummaryService transactionSummaryService;
 
     @Override
     @PostMapping("/save")
     public ResponseEntity<Void> saveCardTransactions(
         @AuthenticationPrincipal CustomOAuth2User customUser,
-        @RequestBody CardApprovalRequestDTO req
+        @RequestBody TransactionRequestDTO request
     ) {
         Long userId = customUser.getUserId();
-        transactionFacade.processTransactions(userId, req);
+        transactionFacade.processTransactions(userId, request);
 
         return ResponseEntity.ok().build();
     }

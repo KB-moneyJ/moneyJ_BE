@@ -1,15 +1,14 @@
 package com.project.moneyj.transaction.service.event;
 
-
 import com.project.moneyj.analysis.service.TransactionSummaryService;
-import com.project.moneyj.codef.service.CodefCardService;
 import com.project.moneyj.transaction.domain.Transaction;
 import com.project.moneyj.transaction.domain.event.TransactionRequestEvent;
+import com.project.moneyj.transaction.dto.ExternalTransactionDTO;
 import com.project.moneyj.transaction.service.TransactionService;
+import com.project.moneyj.transaction.service.external.TransactionProvider;
 import com.project.moneyj.user.domain.User;
 import com.project.moneyj.user.repository.UserRepository;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -21,8 +20,8 @@ import org.springframework.stereotype.Component;
 @RequiredArgsConstructor
 public class TransactionEventListener {
     private final UserRepository userRepository;
-    private final CodefCardService codefCardService;
     private final TransactionService transactionService;
+    private final TransactionProvider transactionProvider;
     private final TransactionSummaryService transactionSummaryService;
 
     @Async("transactionExecutor")
@@ -33,21 +32,14 @@ public class TransactionEventListener {
             .orElseThrow(() -> new IllegalArgumentException("유저 없음"));
 
         // 외부 API 호출
-        Map<String, Object> response = codefCardService.getCardApprovalList(user.getUserId(), event.getRequest());
+        List<ExternalTransactionDTO> response = transactionProvider.fetchTransactions(user.getUserId(), event.getRequest());
 
-        // data 안전하게 처리 (리스트/단일 객체 모두 대응)
-        Object rawData = response.get("data");
-        List<Map<String, Object>> data;
-        if (rawData instanceof List<?> list) {
-            data = (List<Map<String, Object>>) list;
-        } else if (rawData instanceof Map<?, ?> map) {
-            data = List.of((Map<String, Object>) map); // 단일 객체를 리스트로 감싸기
-        } else {
-            data = List.of(); // 비어있거나 예상치 못한 타입 처리
+        if (response == null || response.isEmpty()) {
+            return; // 이번 주에 거래가 없다면 종료
         }
 
         // 거래 DB 저장 (트랜잭션)
-        List<Transaction> transactions = transactionService.saveTransactions(user, data);
+        List<Transaction> transactions = transactionService.saveTransactions(user, response);
 
         // 요약 DB 저장 (트랜잭션)
         transactionSummaryService.initialize6MonthsSummary(user.getUserId());

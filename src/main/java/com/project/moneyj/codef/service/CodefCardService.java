@@ -1,25 +1,20 @@
 package com.project.moneyj.codef.service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.project.moneyj.card.repository.CardRepository;
 import com.project.moneyj.codef.config.CodefProperties;
 import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
+import com.project.moneyj.codef.dto.CodefCardApprovalDTO;
+import com.project.moneyj.codef.dto.CodefCardDTO;
+import com.project.moneyj.codef.dto.CodefResponseDTO;
 import com.project.moneyj.codef.repository.CodefConnectedIdRepository;
 import com.project.moneyj.codef.util.ApiResponseDecoder;
 import com.project.moneyj.codef.util.RsaEncryptor;
 import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.CodefErrorCode;
-import com.project.moneyj.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.reactive.function.client.WebClient;
 
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 @Service
@@ -29,13 +24,32 @@ public class CodefCardService {
 
     private final CodefApiClient codefApiClient;
     private final CodefProperties codefProperties;
-    private final CodefConnectedIdRepository codefConnectedIdRepository;
+
+    // 보유 카드 조회
+    public List<CodefCardDTO> fetchCards(String connectedId, String organization) {
+
+        // CODEF 보유카드 목록 조회 API 호출
+        Map<String, Object> body = Map.of(
+                "organization", organization,
+                "connectedId", connectedId
+        );
+
+        String url = codefProperties.getBaseUrl() + "/v1/kr/card/p/account/card-list";
+
+        List<CodefCardDTO> data = codefApiClient.fetchAndDecode(url, body, new TypeReference<>() {});
+
+        if (data == null || data.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        // 빈 객체({})가 들어와서 null 밭이 된 DTO가 있다면 필터링
+        return data.stream()
+                .filter(card -> card.resCardNo() != null && !card.resCardNo().isBlank())
+                .toList();
+    }
 
     // 거래 내역 조회(카드)
-    public Map<String, Object> getCardApprovalList(Long userId, CardApprovalRequestDTO req) {
-
-        String connectedId = codefConnectedIdRepository.findActiveConnectedIdByUserId(userId)
-                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
+    public List<CodefCardApprovalDTO> getCardApprovalList(String connectedId, CardApprovalRequestDTO req) {
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("organization", req.getOrganization());
@@ -75,29 +89,8 @@ public class CodefCardService {
                         ? "1" : req.getMemberStoreInfoType());
 
         String url = codefProperties.getBaseUrl() + "/v1/kr/card/p/account/approval-list";
+        List<CodefCardApprovalDTO> data = codefApiClient.fetchAndDecode(url, body, new TypeReference<>() {});
 
-        String rawResponse = codefApiClient.executePost(url, body);
-
-        return ApiResponseDecoder.decode(rawResponse);
-    }
-
-    // 보유 카드 조회
-    public Map<String, Object> fetchCards(Long userId, String organization) {
-        String connectedId = codefConnectedIdRepository.findActiveConnectedIdByUserId(userId)
-                .orElseThrow(() -> MoneyjException.of(CodefErrorCode.CONNECTED_ID_NOT_FOUND));
-
-        // CODEF 보유카드 목록 조회 API 호출
-        Map<String, Object> body = Map.of(
-                "organization", organization,
-                "connectedId", connectedId
-        );
-
-        String url = codefProperties.getBaseUrl() + "/v1/kr/card/p/account/card-list";
-
-        String rawResponse = codefApiClient.executePost(url, body);
-
-        log.info("보유 중인 카드 리스트: {}", ApiResponseDecoder.decode(rawResponse));
-
-        return ApiResponseDecoder.decode(rawResponse);
+        return data != null ? data : Collections.emptyList();
     }
 }
