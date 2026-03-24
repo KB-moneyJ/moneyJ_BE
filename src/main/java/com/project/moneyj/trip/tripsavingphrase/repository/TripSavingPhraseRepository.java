@@ -1,7 +1,8 @@
-package com.project.moneyj.trip.tip.repository;
+package com.project.moneyj.trip.tripsavingphrase.repository;
 
-import com.project.moneyj.trip.tip.domain.TripSavingPhrase;
+import com.project.moneyj.trip.tripsavingphrase.domain.TripSavingPhrase;
 import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;

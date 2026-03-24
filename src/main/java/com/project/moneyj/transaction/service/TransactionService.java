@@ -1,15 +1,14 @@
 package com.project.moneyj.transaction.service;
 
 import com.project.moneyj.analysis.service.TransactionSummaryService;
-import com.project.moneyj.codef.dto.CardApprovalRequestDTO;
-import com.project.moneyj.codef.service.CodefCardService;
 import com.project.moneyj.transaction.domain.Transaction;
+import com.project.moneyj.transaction.dto.ExternalTransactionDTO;
+import com.project.moneyj.transaction.dto.TransactionRequestDTO;
 import com.project.moneyj.transaction.repository.TransactionRepository;
+import com.project.moneyj.transaction.service.external.TransactionProvider;
 import com.project.moneyj.user.domain.User;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,83 +17,46 @@ import org.springframework.transaction.annotation.Transactional;
 @RequiredArgsConstructor
 public class TransactionService {
     private final TransactionRepository transactionRepository;
-    private final CodefCardService codefCardService;
+    private final TransactionProvider transactionProvider;
     private final TransactionSummaryService transactionSummaryService;
 
     @Transactional
-    public List<Transaction> saveTransactions(User user, List<Map<String, Object>> data)
+    public List<Transaction> saveTransactions(User user, List<ExternalTransactionDTO> data)
     {
         List<Transaction> transactions = data.stream()
-                .map(raw -> toTransaction(raw, user))
+                .map(dto -> toTransaction(dto, user))
                 .toList();
+
         transactionRepository.saveAll(transactions);
         return transactions;
     }
 
-    public Transaction toTransaction(Map<String, Object> raw, User user) {
-        String resUsedDate = (String) raw.get("resUsedDate");
-        String resUsedTime = (String) raw.get("resUsedTime");
-
-        LocalDateTime usedDateTime = LocalDateTime.parse(
-            resUsedDate + resUsedTime,
-            DateTimeFormatter.ofPattern("yyyyMMddHHmmss")
+    public Transaction toTransaction(ExternalTransactionDTO dto, User user) {
+        return Transaction.of(
+                user,
+                StoreCategoryMapper.mapToCategory(dto.storeType()),
+                dto.usedDateTime(),
+                dto.actualAmount(),
+                dto.storeName(),
+                dto.storeCorpNo(),
+                dto.storeAddr(),
+                dto.storeNo(),
+                dto.storeType(),
+                dto.approvalNo(),
+                LocalDateTime.now()
         );
-
-        // 실제 승인/취소 금액 계산
-        String rawUsed = (String) raw.get("resUsedAmount");
-        String rawCancelYN = (String) raw.get("resCancelYN");
-        String rawCancelAmount = (String) raw.get("resCancelAmount");
-
-        int usedAmount = safeParseInt(rawUsed);
-        int cancelAmount = safeParseInt(rawCancelAmount);
-
-        int actualAmount = "0".equals(rawCancelYN)
-            ? usedAmount
-            : (cancelAmount > 0 ? usedAmount - cancelAmount : usedAmount);
-
-        return Transaction.of(user,
-                        StoreCategoryMapper.mapToCategory((String) raw.get("resMemberStoreType")),
-                        usedDateTime,
-                        actualAmount,
-                        (String) raw.get("resMemberStoreName"),
-                        (String) raw.get("resMemberStoreCorpNo"),
-                        (String) raw.get("resMemberStoreAddr"),
-                        (String) raw.get("resMemberStoreNo"),
-                        (String) raw.get("resMemberStoreType"),
-                        (String) raw.get("resApprovalNo"),
-                        LocalDateTime.now());
-    }
-
-    private int safeParseInt(String value) {
-        if (value == null || value.isEmpty()) return 0;
-        try {
-            return (int) Double.parseDouble(value.trim());
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
 
     @Transactional
-    public void updateWeeklyTransactions(User user, CardApprovalRequestDTO req) {
+    public void updateWeeklyTransactions(User user, TransactionRequestDTO request) {
 
-        Map<String, Object> response = codefCardService.getCardApprovalList(user.getUserId(), req);
+        List<ExternalTransactionDTO> response = transactionProvider.fetchTransactions(user.getUserId(), request);
 
-        Object rawData = response.get("data");
-
-        List<Map<String, Object>> data;
-
-        if (rawData instanceof List<?> list) {
-            data = (List<Map<String, Object>>) list;
-        } else if (rawData instanceof Map<?, ?> map) {
-            data = List.of((Map<String, Object>) map);
-        } else {
-            data = List.of();
-        }
-
-        if (data.isEmpty()) {
+        if (response == null || response.isEmpty()) {
             return; // 이번 주에 거래가 없다면 종료
         }
-        List<Transaction> newTransactions = saveTransactions(user, data);
+
+        List<Transaction> newTransactions = saveTransactions(user, response);
 
         transactionSummaryService.updateCurrentMonthSummary(user.getUserId(), newTransactions);
     }

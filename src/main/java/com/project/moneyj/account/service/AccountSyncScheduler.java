@@ -1,8 +1,9 @@
 package com.project.moneyj.account.service;
 
 import com.project.moneyj.account.domain.Account;
+import com.project.moneyj.account.dto.ExternalAccountDTO;
 import com.project.moneyj.account.repository.AccountRepository;
-import com.project.moneyj.codef.service.CodefBankService;
+import com.project.moneyj.account.service.external.AccountProvider;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -20,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AccountSyncScheduler {
 
     private final AccountRepository accountRepository;
-    private final CodefBankService codefBankService;
+    private final AccountProvider accountProvider;
 
     /**
      * 매일 00시, 06시, 12시, 18시에 전체 계좌 스냅샷 동기화
@@ -36,8 +37,8 @@ public class AccountSyncScheduler {
             return;
         }
 
-        // (최소화용) userId + orgCode 기준으로 CODEF 호출 결과 캐싱
-        Map<String, List<Map<String, Object>>> cache = new HashMap<>();
+        // 캐시
+        Map<String, List<ExternalAccountDTO>> cache = new HashMap<>();
 
         for (Account account : accounts) {
             Long userId = account.getUser().getUserId();
@@ -50,26 +51,28 @@ public class AccountSyncScheduler {
 
             String key = userId + "|" + orgCode;
 
-            List<Map<String, Object>> depositAccounts = cache.computeIfAbsent(key, k -> {
-                Map<String, Object> res = codefBankService.fetchBankAccounts(userId, orgCode);
-                Map<String, Object> data = (Map<String, Object>) res.get("data");
-                if (data == null || data.get("resDepositTrust") == null) {
+            // 캐시에 없으면 API 호출 후 저장
+            List<ExternalAccountDTO> depositAccounts = cache.computeIfAbsent(key, k -> {
+
+                List<ExternalAccountDTO> res = accountProvider.fetchBankAccounts(userId, orgCode);
+
+                if (res == null || res.isEmpty()) {
                     log.warn("정기 동기화 실패: userId={}, orgCode={} (응답에 계좌 없음)", userId, orgCode);
                     return Collections.emptyList();
                 }
-                return (List<Map<String, Object>>) data.get("resDepositTrust");
+                return res;
             });
 
             if (depositAccounts.isEmpty()) {
                 continue;
             }
 
-            Optional<Map<String, Object>> match = depositAccounts.stream()
-                    .filter(acc -> accountNumber.equals(String.valueOf(acc.get("resAccount"))))
+            Optional<ExternalAccountDTO> match = depositAccounts.stream()
+                    .filter(acc -> accountNumber.equals(acc.accountNumber()))
                     .findFirst();
 
             if (match.isPresent()) {
-                Integer latestBalance = Integer.parseInt(String.valueOf(match.get().get("resAccountBalance")));
+                Integer latestBalance = match.get().balance();
                 account.updateBalance(latestBalance);
                 log.debug("정기 동기화: userId={}, account={}, balance={}",
                         userId, accountNumber, latestBalance);

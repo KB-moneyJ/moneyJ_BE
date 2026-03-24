@@ -1,13 +1,8 @@
 package com.project.moneyj.card.controller;
 
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.card.dto.CardInfoDTO;
-import com.project.moneyj.card.dto.CardLinkRequestDTO;
-import com.project.moneyj.card.dto.CardResponseDTO;
-import com.project.moneyj.card.dto.CardSwitchRequestDTO;
+import com.project.moneyj.card.dto.*;
 import com.project.moneyj.card.service.CardService;
-import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
-import com.project.moneyj.codef.service.CodefCardService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -34,9 +29,9 @@ public class CardController implements CardControllerApiSpec {
     @PostMapping("/connect")
     public ResponseEntity<List<CardInfoDTO>> connectInstitutionAndFetchCards(
             @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestBody CredentialCreateRequestDTO.CredentialInput input) {
+            @RequestBody CardConnectionRequestDTO request) {
         Long userId = customUser.getUserId();
-        List<CardInfoDTO> cards = cardService.connectInstitutionAndFetchCards(userId, input);
+        List<CardInfoDTO> cards = cardService.connectInstitutionAndFetchCards(userId, request);
         return ResponseEntity.ok(cards);
     }
 

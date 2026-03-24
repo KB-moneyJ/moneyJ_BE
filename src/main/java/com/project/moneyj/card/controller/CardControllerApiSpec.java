@@ -1,11 +1,7 @@
 package com.project.moneyj.card.controller;
 
 import com.project.moneyj.auth.dto.CustomOAuth2User;
-import com.project.moneyj.card.dto.CardInfoDTO;
-import com.project.moneyj.card.dto.CardLinkRequestDTO;
-import com.project.moneyj.card.dto.CardResponseDTO;
-import com.project.moneyj.card.dto.CardSwitchRequestDTO;
-import com.project.moneyj.codef.dto.CredentialCreateRequestDTO;
+import com.project.moneyj.card.dto.*;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -15,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestParam;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -32,7 +27,7 @@ public interface CardControllerApiSpec {
     })
     ResponseEntity<List<CardInfoDTO>> connectInstitutionAndFetchCards(
             @AuthenticationPrincipal CustomOAuth2User customUser,
-            @RequestBody CredentialCreateRequestDTO.CredentialInput input);
+            @RequestBody CardConnectionRequestDTO request);
 
     @Operation(summary = "선택한 카드를 DB에 저장 (연결)", description = "사용자가 CODEF에서 조회한 카드 목록 중 선택한 카드를 로컬 DB에 저장(연결)합니다.")
     @ApiResponses(value = {

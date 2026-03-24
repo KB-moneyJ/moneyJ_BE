@@ -32,23 +32,9 @@ public class CodefInstitution extends BaseTimeEntity {
     @Column(name = "login_type", length = 10)
     private String loginType;
 
-    @Column(name = "login_id_masked", length = 100)
-    private String loginIdMasked;
-
+    @Enumerated(EnumType.STRING)
     @Column(name = "status", length = 20)
-    private String status;
-
-    @Column(name = "last_verified_at")
-    private LocalDateTime lastVerifiedAt;
-
-    // 최근 결과 코드
-    @Column(name = "last_result_code", length = 20)
-    private String lastResultCode;
-
-    // 최근 결과 메시지
-    @Column(name = "last_result_msg", length = 255)
-    private String lastResultMsg;
-
+    private InstitutionStatus status;
 
     // === 생성자 (도메인 내부용) ===
     @Builder(access =  AccessLevel.PRIVATE)
@@ -56,23 +42,13 @@ public class CodefInstitution extends BaseTimeEntity {
                             String connectedId,
                             String organization,
                             String loginType,
-                            String loginIdMasked,
-                            String status,
-                            LocalDateTime lastVerifiedAt,
-                            String lastResultCode,
-                            String lastResultMsg,
-                            LocalDateTime createdAt,
-                            LocalDateTime updatedAt) {
+                            InstitutionStatus status) {
 
         this.codefConnectedId = codefConnectedId;
         this.connectedId = connectedId;
         this.organization = organization;
         this.loginType = loginType;
-        this.loginIdMasked = loginIdMasked;
         this.status = status;
-        this.lastVerifiedAt = lastVerifiedAt;
-        this.lastResultCode = lastResultCode;
-        this.lastResultMsg = lastResultMsg;
     }
 
     // === 정적 팩토리 메서드 ===
@@ -80,34 +56,20 @@ public class CodefInstitution extends BaseTimeEntity {
                                       String connectedId,
                                       String organization,
                                       String loginType,
-                                      String loginIdMasked,
-                                      String status,
-                                      LocalDateTime lastVerifiedAt,
-                                      String lastResultCode,
-                                      String lastResultMsg,
-                                      LocalDateTime createdAt,
-                                      LocalDateTime updatedAt) {
+                                      InstitutionStatus status) {
 
         return CodefInstitution.builder()
                 .codefConnectedId(codefConnectedId)
                 .connectedId(connectedId)
                 .organization(organization)
                 .loginType(loginType)
-                .loginIdMasked(loginIdMasked)
                 .status(status)
-                .lastVerifiedAt(lastVerifiedAt)
-                .lastResultCode(lastResultCode)
-                .lastResultMsg(lastResultMsg)
                 .build();
     }
 
     // === 비즈니스 로직 ===
-    public void updateConnectionStatus(String loginType, String status, String lastResultCode, String lastResultMsg, String loginIdMasked) {
+    public void updateConnectionStatus(String loginType, InstitutionStatus status) {
         this.loginType = loginType;
         this.status = status;
-        this.lastResultCode = lastResultCode;
-        this.lastResultMsg = lastResultMsg;
-        this.lastVerifiedAt = LocalDateTime.now();
-        this.loginIdMasked = loginIdMasked;
     }
 }
