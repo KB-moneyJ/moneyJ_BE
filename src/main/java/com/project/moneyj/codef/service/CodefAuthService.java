@@ -8,11 +8,13 @@ import com.project.moneyj.exception.MoneyjException;
 import com.project.moneyj.exception.code.CodefErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.log4j.Log4j2;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Mono;
 
 import java.time.LocalDateTime;
 
@@ -73,21 +75,26 @@ public class CodefAuthService {
      */
     private TokenResponseDTO requestAccessToken() {
 
-        // 토큰 URL을 명시적으로 분리
         String url = "https://oauth.codef.io/oauth/token";
 
         return codefWebClient.post()
                 .uri(url)
                 .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                 .headers(h -> {
-                    // BasicAuth도 그대로 사용
+                    // 기존 로직 그대로 유지
                     h.setBasicAuth(codefProperties.getClientId(), codefProperties.getClientSecret());
                 })
                 .body(BodyInserters.fromFormData("grant_type", "client_credentials")
                         .with("client_id", codefProperties.getClientId())
                         .with("client_secret", codefProperties.getClientSecret())
-                        .with("scope", "read")) // scope 필요 없으면 제거 가능
+                        .with("scope", "read")) // 기존 로직 그대로 유지
                 .retrieve()
+                .onStatus(HttpStatusCode::isError, response -> response.bodyToMono(String.class)
+                        .flatMap(errorBody -> {
+                            log.error("CODEF 500 에러 진짜 원인: 상태코드={}, 응답본문={}", response.statusCode(), errorBody);
+                            return Mono.error(MoneyjException.of(CodefErrorCode.TOKEN_PARSE_FAILED));
+                        })
+                )
                 .bodyToMono(TokenResponseDTO.class)
                 .blockOptional()
                 .orElseThrow(() -> MoneyjException.of(CodefErrorCode.TOKEN_PARSE_FAILED));
