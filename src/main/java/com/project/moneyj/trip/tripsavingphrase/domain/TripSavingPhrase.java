@@ -1,15 +1,8 @@
-package com.project.moneyj.trip.tip.domain;
+package com.project.moneyj.trip.tripsavingphrase.domain;
 
 import com.project.moneyj.common.BaseTimeEntity;
 import com.project.moneyj.trip.member.domain.TripMember;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -20,7 +13,8 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TripSavingPhrase extends BaseTimeEntity {
 
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long tripSavingPhraseId;
 
     @ManyToOne(fetch = FetchType.LAZY)

@@ -1,6 +1,6 @@
-package com.project.moneyj.trip.tip.repository;
+package com.project.moneyj.trip.triptip.repository;
 
-import com.project.moneyj.trip.tip.domain.TripTip;
+import com.project.moneyj.trip.triptip.domain.TripTip;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

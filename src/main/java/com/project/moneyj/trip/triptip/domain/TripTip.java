@@ -1,4 +1,4 @@
-package com.project.moneyj.trip.tip.domain;
+package com.project.moneyj.trip.triptip.domain;
 
 import com.project.moneyj.common.BaseTimeEntity;
 import jakarta.persistence.Entity;
@@ -7,16 +7,12 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import lombok.AccessLevel;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Getter
-@Builder
 @Table(name = "trip_tip")
-@AllArgsConstructor
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class TripTip extends BaseTimeEntity {
 
