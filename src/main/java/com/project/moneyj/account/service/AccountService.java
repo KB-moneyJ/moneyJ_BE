@@ -211,7 +211,7 @@ public class AccountService {
 
         // 현재 Account와 매칭되는 CODEF 계좌 찾아서 업데이트
         externalAccounts.stream()
-                .filter(dto -> accountNumber.equals(dto.accountName()))
+                .filter(dto -> accountNumber.equals(dto.accountNumber()))
                 .findFirst()
                 .ifPresent(dto -> {
                     account.updateBalance((int) dto.balance());
