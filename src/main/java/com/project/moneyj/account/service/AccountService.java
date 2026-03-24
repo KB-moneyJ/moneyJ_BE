@@ -206,6 +206,9 @@ public class AccountService {
             throw MoneyjException.of(AccountErrorCode.ACCOUNT_NOT_FOUND);
         }
 
+        // 리스트 전체를 한 번에 출력
+        log.info("CODEF 계좌 목록 조회 결과: {}", externalAccounts);
+
         // 현재 Account와 매칭되는 CODEF 계좌 찾아서 업데이트
         externalAccounts.stream()
                 .filter(dto -> accountNumber.equals(dto.accountName()))
